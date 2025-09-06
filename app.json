@@ -1,8 +1,9 @@
 {
   "expo": {
     "name": "daps",
-    "slug": "daps",
+    "slug": "devappunb",
     "version": "1.0.0",
+    "owner": "devappsunb",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "daps",
@@ -20,7 +21,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.devappsunb"
     },
     "web": {
       "bundler": "metro",
@@ -45,7 +47,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b13f4395-1533-47fd-bb00-06f124d92979"
+        "projectId": "3308ff9d-ee99-460d-9ddd-c924f78c0de9"
       }
     }
   }
