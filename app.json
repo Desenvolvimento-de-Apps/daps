@@ -39,6 +39,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Courgette-Regular.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
