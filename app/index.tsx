@@ -1,19 +1,21 @@
 import Feather from '@expo/vector-icons/Feather';
+import { Link } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Button from './components/Button';
 import CustomSafeArea from './components/CustomSafeArea';
 import Header from './components/Header';
 
-export default function LoginPage() {
+export default function WelcomeScreen() {
   return (
     <CustomSafeArea>
       {/* HEADER */}
       <Header
-        icon={
+        leftAction={
           <TouchableOpacity onPress={() => {}}>
             <Feather name="menu" size={24} color="#88C9BF" />
           </TouchableOpacity>
         }
+        containerStyle={{ backgroundColor: '#FAFAFA' }}
       />
 
       {/* BODY */}
@@ -28,24 +30,26 @@ export default function LoginPage() {
         </Text>
         {/* BOTÕES */}
         <View style={styles.buttonsContainer}>
-          <Button
-            title="ADOTAR"
-            onPress={() => {}}
-            loading={false}
-            backgroundColor="#FFD358"
-            textColor="#434343"
-          />
+          {/* Usar o componente <Link> do expo-router é a forma correta
+            de navegar entre telas baseadas em arquivos.
+           */}
+          <Link href="/adopt" asChild>
+            <Button
+              title="ADOTAR"
+              onPress={() => {}} // A navegação é feita pelo Link
+              backgroundColor="#FFD358"
+              textColor="#434343"
+            />
+          </Link>
           <Button
             title="AJUDAR"
             onPress={() => {}}
-            loading={false}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
           <Button
             title="CADASTRAR ANIMAL"
             onPress={() => {}}
-            loading={false}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
@@ -65,7 +69,6 @@ export default function LoginPage() {
   );
 }
 
-// ESTILOS
 const styles = StyleSheet.create({
   body: {
     flex: 1,
@@ -81,10 +84,10 @@ const styles = StyleSheet.create({
   bemVindo: {
     width: '100%',
     fontSize: 16,
-    fontFamily: 'Roboto-Regular',
     color: '#757575',
     textAlign: 'center',
     marginTop: 56,
+    lineHeight: 24, // Melhora a legibilidade
   },
   buttonsContainer: {
     width: '100%',
@@ -94,9 +97,8 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    fontFamily: 'Roboto-Regular',
     color: '#88C9BF',
     marginTop: 42,
-    marginBottom: 68,
+    marginBottom: 20,
   },
 });
