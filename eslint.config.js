@@ -1,47 +1,32 @@
 // https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require('eslint/config');
-const expoConfig = require('eslint-config-expo/flat');
+const expo = require('eslint-config-expo');
+const prettierConfig = require('eslint-config-prettier');
+const prettierPlugin = require('eslint-plugin-prettier');
 
-module.exports = {
-  env: {
-    es6: true,
-  },
-  extends: [
-    'airbnb',
-    'prettier',
-    'prettier/react'
-  ],
-  globals: {
-    Atomics: 'readonly',
-    SharedArrayBuffer: 'readonly',
-    __DEV__: 'readonly'
-  },
-  parser: 'babel-eslint',
-  parserOptions: {
-    ecmaFeatures: {
-      jsx: true,
+/**
+ * Este é o novo formato "flat config" do ESLint.
+ * É mais simples e a direção futura da ferramenta.
+ * `eslint-config-expo` já inclui as principais regras para React Native.
+ * `eslint-config-prettier` desativa regras que conflitam com o Prettier.
+ */
+module.exports = [
+  ...expo,
+  prettierConfig,
+  {
+    // Adiciona o plugin do Prettier
+    plugins: {
+      prettier: prettierPlugin,
     },
-    ecmaVersion: 2018,
-    sourceType: 'module',
+    rules: {
+      // Ativa a regra do Prettier, que reportará problemas de formatação como erros do ESLint.
+      // A configuração para o Prettier está no arquivo `prettier.config.js`.
+      'prettier/prettier': 'error',
+
+      // Mantive as regras que você já tinha:
+      'import/prefer-default-export': 'off',
+      'react/jsx-props-no-spreading': 'off',
+      'react/prop-types': 'off',
+    },
   },
-  plugins: [
-    'react',
-    'prettier'
-  ],
-  rules: {
-    'prettier/prettier': 'error',
-    'react/jsx-filename-extension': [
-      'warn',
-      {
-        extensions: ['.jsx', '.js']
-      }
-    ],
-    'import/prefer-default-export': 'off',
-    'react/state-in-constructor': 'off',
-    'react/static-property-placement': 'off',
-    'react/jsx-props-no-spreading': 'off',
-    'react/prop-types': 'off',
-    'no-param-reassign': 'off',
-    'no-console': 'off'
-  },
-};
+];
+
