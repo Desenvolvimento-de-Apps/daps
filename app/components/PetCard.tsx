@@ -1,15 +1,17 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Pet } from '../types';
 
 interface PetCardProps {
   pet: Pet;
+  onPress: () => void;
 }
 
-const PetCard = ({ pet }: PetCardProps) => {
+const PetCard = ({ pet, onPress }: PetCardProps) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity onPress={onPress}>
+      <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.name}>{pet.name}</Text>
         <Feather name="heart" size={24} color="#434343" />
@@ -31,6 +33,7 @@ const PetCard = ({ pet }: PetCardProps) => {
         <Text style={styles.locationText}>{pet.location}</Text>
       </View>
     </View>
+    </TouchableOpacity>
   );
 };
 

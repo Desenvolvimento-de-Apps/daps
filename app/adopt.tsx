@@ -5,6 +5,7 @@ import CustomSafeArea from './components/CustomSafeArea';
 import Header from './components/Header';
 import PetCard from './components/PetCard';
 import { Pet } from './types';
+import { router } from 'expo-router';
 
 // Dados mocados (mock data) para a lista de pets.
 // O ideal é que esses dados venham de uma API no futuro.
@@ -39,6 +40,10 @@ const MOCK_PETS: Pet[] = [
 ];
 
 export default function AdoptScreen() {
+  const handleCardPress = (petName: string) => {
+    router.navigate({ pathname: '/finish', params: { petName } });
+  };
+
   return (
     <CustomSafeArea style={styles.container}>
       <Header
@@ -46,7 +51,7 @@ export default function AdoptScreen() {
         leftAction={
           <TouchableOpacity
             onPress={() => {
-              /* Lógica para abrir o menu */
+              router.back();
             }}
           >
             <Feather name="menu" size={24} color="#434343" />
@@ -65,7 +70,9 @@ export default function AdoptScreen() {
 
       <FlatList
         data={MOCK_PETS}
-        renderItem={({ item }) => <PetCard pet={item} />}
+        renderItem={({ item }) => (
+          <PetCard pet={item} onPress={() => handleCardPress(item.name)} />
+        )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
       />
