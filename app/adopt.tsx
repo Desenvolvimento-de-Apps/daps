@@ -40,10 +40,9 @@ const MOCK_PETS: Pet[] = [
 ];
 
 export default function AdoptScreen() {
-
-  const handleCardPress = (petName: string) => { 
-    router.push({ pathname: '/finish', params: { petName } });
-  }
+  const handleCardPress = (petName: string) => {
+    router.navigate({ pathname: '/finish', params: { petName } });
+  };
 
   return (
     <CustomSafeArea style={styles.container}>
@@ -52,7 +51,7 @@ export default function AdoptScreen() {
         leftAction={
           <TouchableOpacity
             onPress={() => {
-              /* Lógica para abrir o menu */
+              router.back();
             }}
           >
             <Feather name="menu" size={24} color="#434343" />
@@ -71,10 +70,9 @@ export default function AdoptScreen() {
 
       <FlatList
         data={MOCK_PETS}
-        renderItem={({ item }) => 
-        <PetCard pet={item} 
-        onPress={() => handleCardPress(item.name)}/>
-      }
+        renderItem={({ item }) => (
+          <PetCard pet={item} onPress={() => handleCardPress(item.name)} />
+        )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
       />

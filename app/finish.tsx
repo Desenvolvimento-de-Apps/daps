@@ -1,51 +1,52 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
-import CustomSafeArea from "./components/CustomSafeArea";
-import { Feather } from "@expo/vector-icons";
+import CustomSafeArea from './components/CustomSafeArea';
+import { Feather } from '@expo/vector-icons';
 import Header from './components/Header';
 import Button from './components/Button';
 import { router } from 'expo-router';
 
 export default function FinishScreen() {
-    const params = useLocalSearchParams();
-    const petName = params.petName || "pet";
+  const params = useLocalSearchParams();
+  const petName = params.petName || 'pet';
 
-    return ( 
+  return (
+    <CustomSafeArea style={styles.container}>
+      <Header
+        title="Finalizar Processo"
+        leftAction={
+          <TouchableOpacity
+            onPress={() => {
+              router.back();
+            }}
+          >
+            <Feather name="arrow-left" size={24} color="#434343" />
+          </TouchableOpacity>
+        }
+        rightAction={null}
+        containerStyle={{ backgroundColor: '#88c9bf' }}
+      />
+      <View style={styles.body}>
+        <Text style={styles.h1}>Oba!</Text>
+        <Text style={styles.message}>
+          Ficamos muito felizes com o sucesso do seu processo! Esperamos que o
+          bichinho esteja curtindo muito essa nova experiência!{'\n'}
+          {'\n'}
+          Agora, que tal compartilhar a história do {petName} com todos os
+          outros membros do Meau?
+        </Text>
+      </View>
 
-        <CustomSafeArea style={styles.container}>
-            <Header
-                title="Finalizar Processo"
-                leftAction={
-                    <TouchableOpacity
-                    onPress={() => { router.back(); }}
-                    >
-                        <Feather name="arrow-left" size={24} color="#434343" />
-                    </TouchableOpacity>
-                }
-                rightAction={null}
-                containerStyle={{backgroundColor: '#88c9bf'}}
-            />
-            <View style={styles.body}>
-                <Text style={styles.h1}>Oba!</Text>
-                <Text style={styles.message}>Ficamos muito felizes com o sucesso do seu processo! 
-                    Esperamos que o bichinho esteja curtindo muito essa nova experiência!{'\n'}
-                    {'\n'}
-                    Agora, que tal compartilhar a história do {petName} com todos os outros membros do Meau?
-                    </Text>
-            </View>
-
-            <Button
-                        title="COMPARTILHAR HISTÓRIA"
-                        onPress={() => {}}
-                        backgroundColor="#88c9bf"
-                        textColor="#434343"
-                        style={styles.button}
-                      />
-            
-        </CustomSafeArea>
-    )
-
+      <Button
+        title="COMPARTILHAR HISTÓRIA"
+        onPress={() => {}}
+        backgroundColor="#88c9bf"
+        textColor="#434343"
+        style={styles.button}
+      />
+    </CustomSafeArea>
+  );
 }
 
 const styles = StyleSheet.create({
