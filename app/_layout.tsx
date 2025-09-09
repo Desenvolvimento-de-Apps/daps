@@ -35,6 +35,7 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="adopt" options={{ headerShown: false }} />
+      <Stack.Screen name="finish" options={{ headerShown: false }} />
     </Stack>
   );
 }
