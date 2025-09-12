@@ -1,5 +1,12 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 
 interface ButtonProps {
   title: string;
@@ -11,7 +18,7 @@ interface ButtonProps {
   borderRadius?: number;
   style?: ViewStyle;
   textStyle?: TextStyle;
-};
+}
 
 const Button: React.FC<ButtonProps> = ({
   title,
@@ -38,7 +45,9 @@ const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator color={textColor} />
       ) : (
-        <Text style={[styles.text, { color: textColor }, textStyle]}>{title}</Text>
+        <Text style={[styles.text, { color: textColor }, textStyle]}>
+          {title}
+        </Text>
       )}
     </TouchableOpacity>
   );

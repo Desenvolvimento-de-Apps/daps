@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Pet } from '../types';
+import { Pet } from '../../types';
 
 interface PetCardProps {
   pet: Pet;
@@ -12,27 +12,27 @@ const PetCard = ({ pet, onPress }: PetCardProps) => {
   return (
     <TouchableOpacity onPress={onPress}>
       <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.name}>{pet.name}</Text>
-        <Feather name="heart" size={24} color="#434343" />
-      </View>
-
-      <Image
-        source={typeof pet.image === 'string' ? { uri: pet.image } : pet.image}
-        style={styles.image}
-        contentFit="cover"
-        transition={300}
-      />
-
-      <View style={styles.infoContainer}>
-        <View style={styles.tagsContainer}>
-          <Text style={styles.infoText}>{pet.sex}</Text>
-          <Text style={styles.infoText}>{pet.age}</Text>
-          <Text style={styles.infoText}>{pet.size}</Text>
+        <View style={styles.header}>
+          <Text style={styles.name}>{pet.name}</Text>
+          <Feather name="heart" size={24} color="#434343" />
         </View>
-        <Text style={styles.locationText}>{pet.location}</Text>
+
+        <Image
+          source={pet.image}
+          style={styles.image}
+          contentFit="cover"
+          transition={300}
+        />
+
+        <View style={styles.infoContainer}>
+          <View style={styles.tagsContainer}>
+            <Text style={styles.infoText}>{pet.sex}</Text>
+            <Text style={styles.infoText}>{pet.age}</Text>
+            <Text style={styles.infoText}>{pet.size}</Text>
+          </View>
+          <Text style={styles.locationText}>{pet.location}</Text>
+        </View>
       </View>
-    </View>
     </TouchableOpacity>
   );
 };
