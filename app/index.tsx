@@ -53,7 +53,11 @@ export default function WelcomeScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={() => {}}>
+        <TouchableOpacity
+          onPress={() => {
+            router.navigate('./login');
+          }}
+        >
           <Text style={styles.loginText}>login</Text>
         </TouchableOpacity>
 
