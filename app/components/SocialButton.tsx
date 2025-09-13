@@ -1,6 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import React from 'react';
 import {
+  ActivityIndicator,
   StyleSheet,
   Text,
   TextStyle,
@@ -15,6 +16,7 @@ interface SocialButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   iconColor?: string;
+  loading?: boolean;
 }
 
 const SocialButton: React.FC<SocialButtonProps> = ({
@@ -24,16 +26,27 @@ const SocialButton: React.FC<SocialButtonProps> = ({
   style,
   textStyle,
   iconColor = '#434343',
+  loading = false,
 }) => {
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
-      <FontAwesome
-        name={iconName}
-        size={20}
-        color={iconColor}
-        style={styles.icon}
-      />
-      <Text style={[styles.text, textStyle]}>{title}</Text>
+    <TouchableOpacity
+      style={[styles.button, style]}
+      onPress={onPress}
+      disabled={loading}
+    >
+      {loading ? (
+        <ActivityIndicator color={iconColor} />
+      ) : (
+        <>
+          <FontAwesome
+            name={iconName}
+            size={20}
+            color={iconColor}
+            style={styles.icon}
+          />
+          <Text style={[styles.text, textStyle]}>{title}</Text>
+        </>
+      )}
     </TouchableOpacity>
   );
 };
@@ -47,6 +60,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
+    minHeight: 48,
   },
   icon: {
     marginRight: 12,

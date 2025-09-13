@@ -43,11 +43,10 @@
       [
         "expo-font",
         {
-          "fonts": [
-            "./assets/fonts/Courgette-Regular.ttf"
-          ]
+          "fonts": ["./assets/fonts/Courgette-Regular.ttf"]
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
