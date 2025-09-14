@@ -1,11 +1,11 @@
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { Pet } from '../types';
 import CustomSafeArea from './components/CustomSafeArea';
 import Header from './components/Header';
 import PetCard from './components/PetCard';
-import { Pet } from './types';
-import { router } from 'expo-router';
 
 // Dados mocados (mock data) para a lista de pets.
 // O ideal é que esses dados venham de uma API no futuro.

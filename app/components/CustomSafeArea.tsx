@@ -11,9 +11,7 @@ export default function CustomSafeArea({
   children,
   style,
 }: CustomSafeAreaProps) {
-  return (
-    <SafeAreaView style={style ? style : defaultStyle}>{children}</SafeAreaView>
-  );
+  return <SafeAreaView style={[defaultStyle, style]}>{children}</SafeAreaView>;
 }
 
 const defaultStyle: StyleProp<ViewStyle> = {
