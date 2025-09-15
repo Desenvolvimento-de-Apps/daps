@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     gap: 16,
+    marginBottom: 32,
   },
   section: {
     gap: 16,
