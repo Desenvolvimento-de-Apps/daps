@@ -26,6 +26,7 @@ import { Feather } from '@expo/vector-icons';
 // Importações para o login social
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import InputText from './components/Input';
 
 // Garante que o navegador da web feche corretamente após a autenticação.
 WebBrowser.maybeCompleteAuthSession();
@@ -100,7 +101,8 @@ export default function LoginScreen() {
           <Text style={styles.title}>Login</Text>
 
           <View style={styles.inputContainer}>
-            <TextInput
+            <InputText
+              inputType='text'
               style={styles.input}
               placeholder="Nome de usuário"
               placeholderTextColor="#BDBDBD"
@@ -108,13 +110,13 @@ export default function LoginScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
             />
-            <TextInput
+            <InputText
+              inputType='password'
               style={styles.input}
               placeholder="Senha"
               placeholderTextColor="#BDBDBD"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
             />
           </View>
 
