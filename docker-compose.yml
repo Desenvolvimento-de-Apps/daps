@@ -13,4 +13,4 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: npx expo start --web
+    command: npx expo start --web --tunnel
