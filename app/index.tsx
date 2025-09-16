@@ -1,9 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
+import { router } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Button from './components/Button';
 import CustomSafeArea from './components/CustomSafeArea';
 import Header from './components/Header';
-import { router } from 'expo-router';
 
 export default function WelcomeScreen() {
   return (
@@ -41,7 +41,9 @@ export default function WelcomeScreen() {
 
           <Button
             title="AJUDAR"
-            onPress={() => {}}
+            onPress={() => {
+              router.navigate('/cadastro-pessoal');
+            }}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
