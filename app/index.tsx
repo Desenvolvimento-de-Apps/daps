@@ -49,7 +49,9 @@ export default function WelcomeScreen() {
           />
           <Button
             title="CADASTRAR ANIMAL"
-            onPress={() => {}}
+            onPress={() => {
+              router.navigate('/register-pet');
+            }}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
