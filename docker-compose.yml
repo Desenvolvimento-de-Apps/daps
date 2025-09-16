@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  expo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: daps-expo-app
+    ports:
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npx expo start --web

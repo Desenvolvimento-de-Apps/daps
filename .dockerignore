@@ -1,0 +1,10 @@
+node_modules
+.expo/web
+.expo/android
+.expo/ios
+.git
+.gitignore
+npm-debug.log
+yarn-error.log
+yarn.lock
+package-lock.json
