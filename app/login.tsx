@@ -3,6 +3,7 @@ import {
   GoogleAuthProvider,
   signInAnonymously,
   signInWithCredential,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import {
   Alert,
@@ -11,7 +12,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -22,22 +22,19 @@ import SocialButton from './components/SocialButton';
 import { useEffect, useState } from 'react';
 import CustomSafeArea from './components/CustomSafeArea';
 import { Feather } from '@expo/vector-icons';
-
-// Importações para o login social
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import InputText from './components/Input';
 
-// Garante que o navegador da web feche corretamente após a autenticação.
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
+  const [loading, setLoading] = useState(false);
   const [loadingAnonymous, setLoadingAnonymous] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Hook de autenticação do Google
   const [requestGoogle, responseGoogle, promptAsyncGoogle] =
     Google.useAuthRequest({
       webClientId:
@@ -48,7 +45,22 @@ export default function LoginScreen() {
         '270765835083-k5sb1pi685093qlcl9j65366vtpcqk2s.apps.googleusercontent.com',
     });
 
-  // Lógica de login anônimo
+  const handleEmailPasswordLogin = async () => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.replace('/adopt');
+    } catch (error) {
+      console.error('Email/Password auth error:', error);
+      Alert.alert(
+        'Erro de Autenticação',
+        'Não foi possível fazer o login. Verifique suas credenciais.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAnonymousLogin = async () => {
     setLoadingAnonymous(true);
     try {
@@ -65,7 +77,6 @@ export default function LoginScreen() {
     }
   };
 
-  // Efeito para lidar com a resposta da autenticação do Google
   useEffect(() => {
     if (responseGoogle?.type === 'success') {
       setLoadingGoogle(true);
@@ -102,16 +113,16 @@ export default function LoginScreen() {
 
           <View style={styles.inputContainer}>
             <InputText
-              inputType='text'
+              inputType="email"
               style={styles.input}
-              placeholder="Nome de usuário"
+              placeholder="Email"
               placeholderTextColor="#BDBDBD"
-              value={username}
-              onChangeText={setUsername}
+              value={email}
+              onChangeText={setEmail}
               autoCapitalize="none"
             />
             <InputText
-              inputType='password'
+              inputType="password"
               style={styles.input}
               placeholder="Senha"
               placeholderTextColor="#BDBDBD"
@@ -123,12 +134,24 @@ export default function LoginScreen() {
           <View style={styles.buttonContainer}>
             <Button
               title="ENTRAR"
+              onPress={handleEmailPasswordLogin}
+              loading={loading}
+              backgroundColor="#FFD358"
+              textColor="#434343"
+              textStyle={{ fontWeight: 'bold' }}
+              style={styles.button}
+            />
+
+            <Button
+              title="ENTRAR COMO ANÔNIMO"
               onPress={handleAnonymousLogin}
               loading={loadingAnonymous}
               backgroundColor="#FFD358"
               textColor="#434343"
               textStyle={{ fontWeight: 'bold' }}
+              style={styles.button}
             />
+
             <SocialButton
               title="ENTRAR COM GOOGLE"
               onPress={() => {
@@ -186,5 +209,9 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     gap: 12,
+  },
+  button: {
+    height: 48,
+    borderRadius: 4,
   },
 });
