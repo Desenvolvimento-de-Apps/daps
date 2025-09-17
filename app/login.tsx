@@ -65,7 +65,7 @@ export default function LoginScreen() {
     setLoadingAnonymous(true);
     try {
       await signInAnonymously(auth);
-      router.replace('/adopt');
+      router.replace('/');
     } catch (error) {
       console.error('Anonymous auth error:', error);
       Alert.alert(

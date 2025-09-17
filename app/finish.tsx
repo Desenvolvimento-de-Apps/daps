@@ -1,15 +1,46 @@
 import { useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
 import CustomSafeArea from './components/CustomSafeArea';
 import { Feather } from '@expo/vector-icons';
 import Header from './components/Header';
 import Button from './components/Button';
 import { router } from 'expo-router';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 
 export default function FinishScreen() {
+  const [loading, setLoading] = useState(true);
   const params = useLocalSearchParams();
   const petName = params.petName || 'pet';
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user || user.isAnonymous) {
+        router.replace('/auth-options');
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <CustomSafeArea
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+      >
+        <ActivityIndicator size="large" color="#88C9BF" />
+      </CustomSafeArea>
+    );
+  }
 
   return (
     <CustomSafeArea style={styles.container}>
