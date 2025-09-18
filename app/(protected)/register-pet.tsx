@@ -1,41 +1,24 @@
-import CustomSafeArea from './components/CustomSafeArea';
-import Header from './components/Header';
-import Button from './components/Button';
-import RadioGroup from './components/RadioGroup';
-import CheckboxGroup from './components/CheckboxGroup';
-import BasicForm from './components/BasicForm';
-import InputText from './components/Input';
+import CustomSafeArea from '../components/CustomSafeArea';
+import Header from '../components/Header';
+import Button from '../components/Button';
+import CheckboxGroup from '../components/CheckboxGroup';
+import BasicForm from '../components/BasicForm';
+import InputText from '../components/Input';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import React, { useState } from 'react';
 
 export default function RegisterPetScreen() {
-  const [loading, setLoading] = useState(true);
   const [adocaoAtivo, setAdocaoAtivo] = useState(false);
   const [apadrinharAtivo, setApadrinharAtivo] = useState(false);
   const [ajudaAtivo, setAjudaAtivo] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user || user.isAnonymous) {
-        router.replace('/auth-options');
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const COR_ATIVA = '#ffd358';
   const COR_TEXTO_ATIVO = '#434343';
@@ -74,16 +57,6 @@ export default function RegisterPetScreen() {
   const [acompanhamento, setAcompanhamento] = useState<string[]>([]);
   const [auxilio, setAuxilio] = useState<string[]>([]);
   const [necessidades, setNecessidades] = useState<string[]>([]);
-
-  if (loading) {
-    return (
-      <CustomSafeArea
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-      >
-        <ActivityIndicator size="large" color="#88C9BF" />
-      </CustomSafeArea>
-    );
-  }
 
   return (
     <CustomSafeArea style={styles.container}>
