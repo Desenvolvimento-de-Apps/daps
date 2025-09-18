@@ -39,6 +39,7 @@ export default function RootLayout() {
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="cadastro-pessoal" options={{ headerShown: false }} />
       <Stack.Screen name="register-pet" options={{ headerShown: false }} />
+      <Stack.Screen name="auth-options" options={{ headerShown: false }} />
     </Stack>
   );
 }

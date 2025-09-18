@@ -42,7 +42,7 @@ export default function WelcomeScreen() {
           <Button
             title="AJUDAR"
             onPress={() => {
-              router.navigate('/cadastro-pessoal');
+              // TODO: Implementar navegação para a tela de ajudar
             }}
             backgroundColor="#FFD358"
             textColor="#434343"
@@ -59,7 +59,7 @@ export default function WelcomeScreen() {
 
         <TouchableOpacity
           onPress={() => {
-            router.navigate('./login');
+            router.navigate('./auth-options');
           }}
         >
           <Text style={styles.loginText}>login</Text>
