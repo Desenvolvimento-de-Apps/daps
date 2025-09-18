@@ -1,17 +1,22 @@
 import Feather from '@expo/vector-icons/Feather';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from './components/Button';
-import CustomSafeArea from './components/CustomSafeArea';
-import Header from './components/Header';
+import Button from '../components/Button';
+import CustomSafeArea from '../components/CustomSafeArea';
+import Header from '../components/Header';
+import { DrawerActions } from '@react-navigation/native';
 
 export default function WelcomeScreen() {
+  const navigation = useNavigation();
+
   return (
     <CustomSafeArea>
       {/* HEADER */}
       <Header
         leftAction={
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          >
             <Feather name="menu" size={24} color="#88C9BF" />
           </TouchableOpacity>
         }
@@ -34,7 +39,7 @@ export default function WelcomeScreen() {
             title="ADOTAR"
             onPress={() => {
               router.navigate('/adopt');
-            }} // A navegação é feita pelo Link
+            }}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
@@ -66,7 +71,7 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
 
         <Image
-          source={require('../assets/logos/meau.jpg')}
+          source={require('../../assets/logos/meau.jpg')}
           style={{ width: 122, height: 44 }}
           resizeMode="contain"
         />
@@ -93,7 +98,7 @@ const styles = StyleSheet.create({
     color: '#757575',
     textAlign: 'center',
     marginTop: 56,
-    lineHeight: 24, // Melhora a legibilidade
+    lineHeight: 24,
   },
   buttonsContainer: {
     width: '100%',

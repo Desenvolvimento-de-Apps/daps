@@ -29,7 +29,7 @@ export default function RootLayout() {
   // Configuração do navegador de Stack.
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="cadastro-pessoal" options={{ headerShown: false }} />
       <Stack.Screen name="auth-options" options={{ headerShown: false }} />
