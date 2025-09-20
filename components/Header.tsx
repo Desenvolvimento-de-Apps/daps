@@ -33,12 +33,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    backgroundColor: '#FFD358', // Cor base do design
+    backgroundColor: '#FFD358',
     height: 60,
     paddingHorizontal: 16,
   },
   actionContainer: {
-    // Garante que os ícones tenham um espaço fixo
     width: 40,
     alignItems: 'center',
     justifyContent: 'center',
@@ -51,6 +50,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#434343', // Cor do texto do design
+    color: '#434343',
   },
 });

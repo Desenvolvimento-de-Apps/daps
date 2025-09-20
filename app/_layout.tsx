@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from '../contexts/AuthContext';
 
 // Impede que a tela de splash seja ocultada automaticamente.
 SplashScreen.preventAutoHideAsync();
@@ -31,13 +31,7 @@ export default function RootLayout() {
     <AuthProvider>
       <Stack>
         <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="cadastro-pessoal"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="auth-options" options={{ headerShown: false }} />
-        <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>
     </AuthProvider>
   );

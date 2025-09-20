@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../../firebaseConfig'; // Verifique o caminho para seu firebaseConfig
+import { auth } from '@/firebaseConfig';
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user) {
         // Força a atualização do token para obter as custom claims mais recentes.
         const idTokenResult = await user.getIdTokenResult(true);
-        // Supondo que suas claims estarão em um objeto 'roles'.
         setRoles(idTokenResult.claims.roles || {});
       } else {
         setRoles({});
@@ -47,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     roles,
-    isAuthenticated: !!user && !user.isAnonymous, // Consideramos não anônimos como "autenticados" para fins de acesso a certas áreas
+    isAuthenticated: !!user,
     isLoading,
   };
 
@@ -59,5 +58,4 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// Default export for compatibility with routing systems expecting a React component
 export default AuthProvider;

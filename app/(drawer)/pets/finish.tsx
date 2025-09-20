@@ -1,9 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import CustomSafeArea from '../components/CustomSafeArea';
+import CustomSafeArea from '@/components/CustomSafeArea';
 import { Feather } from '@expo/vector-icons';
-import Header from '../components/Header';
-import Button from '../components/Button';
+import Header from '@/components/Header';
+import Button from '@/components/Button';
 import { router } from 'expo-router';
 
 export default function FinishScreen() {

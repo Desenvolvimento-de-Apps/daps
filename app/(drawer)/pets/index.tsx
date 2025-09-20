@@ -1,18 +1,19 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { Pet } from '../../types';
-import CustomSafeArea from '../components/CustomSafeArea';
-import Header from '../components/Header';
-import PetCard from '../components/PetCard';
+import { Pet } from '@/types';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import Header from '@/components/Header';
+import PetCard from '@/components/PetCard';
+import { DrawerActions } from '@react-navigation/native';
 
 // Dados mocados (mock data) para a lista de pets.
 const MOCK_PETS: Pet[] = [
   {
     id: '1',
     name: 'Pequi',
-    image: require('../../assets/images/pets/pequi.jpg'),
+    image: require('@/assets/images/pets/pequi.jpg'),
     sex: 'MACHO',
     age: 'ADULTO',
     size: 'MÉDIO',
@@ -21,7 +22,7 @@ const MOCK_PETS: Pet[] = [
   {
     id: '2',
     name: 'Bidu',
-    image: require('../../assets/images/pets/bidu.jpg'),
+    image: require('@/assets/images/pets/bidu.jpg'),
     sex: 'MACHO',
     age: 'ADULTO',
     size: 'MÉDIO',
@@ -30,7 +31,7 @@ const MOCK_PETS: Pet[] = [
   {
     id: '3',
     name: 'Alec',
-    image: require('../../assets/images/pets/alec.jpg'),
+    image: require('@/assets/images/pets/alec.jpg'),
     sex: 'MACHO',
     age: 'FILHOTE',
     size: 'PEQUENO',
@@ -39,8 +40,11 @@ const MOCK_PETS: Pet[] = [
 ];
 
 export default function AdoptScreen() {
+  const router = useRouter();
+  const navigation = useNavigation();
+
   const handleCardPress = (petName: string) => {
-    router.push({ pathname: '/finish', params: { petName } });
+    router.push({ pathname: '/(drawer)/pets/finish', params: { petName } });
   };
 
   return (
@@ -49,9 +53,7 @@ export default function AdoptScreen() {
         title="Adotar"
         leftAction={
           <TouchableOpacity
-            onPress={() => {
-              router.back();
-            }}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
           >
             <Feather name="menu" size={24} color="#434343" />
           </TouchableOpacity>

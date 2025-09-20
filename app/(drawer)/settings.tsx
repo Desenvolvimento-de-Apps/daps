@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import CustomSafeArea from '../components/CustomSafeArea';
+import CustomSafeArea from '@/components/CustomSafeArea';
 
 const SettingsScreen = () => {
   return (

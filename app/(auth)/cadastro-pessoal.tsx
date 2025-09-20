@@ -9,11 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AdicionarFotoButton from './components/AdicionarFotoButton';
-import Button from './components/Button';
-import CustomSafeArea from './components/CustomSafeArea';
-import Header from './components/Header';
-import InputText from './components/Input';
+import AdicionarFotoButton from '@/components/AdicionarFotoButton';
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import Header from '@/components/Header';
+import InputText from '@/components/Input';
 
 export default function CadastroPessoal() {
   return (

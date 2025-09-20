@@ -1,22 +1,26 @@
-import { router } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from './components/Button';
-import CustomSafeArea from './components/CustomSafeArea';
 import { Feather } from '@expo/vector-icons';
-import Header from './components/Header';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import Header from '@/components/Header';
 
 export default function AuthOptionsScreen() {
+  const router = useRouter();
+
   return (
     <CustomSafeArea style={styles.container}>
       <Header
         leftAction={
-          <TouchableOpacity
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Feather name="arrow-left" size={24} color="#434343" />
-          </TouchableOpacity>
+          router.canGoBack() ? (
+            <TouchableOpacity
+              onPress={() => {
+                router.back();
+              }}
+            >
+              <Feather name="arrow-left" size={24} color="#434343" />
+            </TouchableOpacity>
+          ) : null
         }
         title="Cadastro"
         containerStyle={{ backgroundColor: '#88C9BF' }}
@@ -31,7 +35,7 @@ export default function AuthOptionsScreen() {
         <View style={styles.buttonContainer}>
           <Button
             title="FAZER CADASTRO"
-            onPress={() => router.navigate('/cadastro-pessoal')}
+            onPress={() => router.replace('/cadastro-pessoal')}
             backgroundColor="#88C9BF"
             textColor="#434343"
             textStyle={{ fontSize: 16 }}
@@ -42,7 +46,7 @@ export default function AuthOptionsScreen() {
 
           <Button
             title="FAZER LOGIN"
-            onPress={() => router.navigate('/login')}
+            onPress={() => router.replace('/login')}
             backgroundColor="#88C9BF"
             textColor="#434343"
             textStyle={{ fontSize: 16 }}
