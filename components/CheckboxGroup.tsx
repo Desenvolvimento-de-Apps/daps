@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 interface CheckboxGroupProps {
@@ -30,16 +36,11 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.label}>{label}</Text>
-      {/* 3. O container agora permite a quebra de linha */}
       <View style={styles.optionsContainer}>
         {options.map((option) => (
-          // 4. Aplicamos um estilo dinâmico para a largura de cada item
           <TouchableOpacity
             key={option}
-            style={[
-              styles.option,
-              { width: `${100 / quantidadePorLinha}%` } // Calcula a largura percentual
-            ]}
+            style={[styles.option, { width: `${100 / quantidadePorLinha}%` }]}
             onPress={() => handleToggle(option)}
             activeOpacity={0.7}
           >

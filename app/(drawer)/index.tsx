@@ -1,9 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
 import { router, useNavigation } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from '../components/Button';
-import CustomSafeArea from '../components/CustomSafeArea';
-import Header from '../components/Header';
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import Header from '@/components/Header';
 import { DrawerActions } from '@react-navigation/native';
 
 export default function WelcomeScreen() {
@@ -11,7 +11,6 @@ export default function WelcomeScreen() {
 
   return (
     <CustomSafeArea>
-      {/* HEADER */}
       <Header
         leftAction={
           <TouchableOpacity
@@ -23,9 +22,7 @@ export default function WelcomeScreen() {
         containerStyle={{ backgroundColor: '#FAFAFA' }}
       />
 
-      {/* BODY */}
       <View style={styles.body}>
-        {/* TITLE */}
         <Text style={styles.h1}>Olá!</Text>
         <Text style={styles.bemVindo}>
           Bem vindo ao Meau!{'\n'}
@@ -33,40 +30,31 @@ export default function WelcomeScreen() {
           cães e gatos com facilidade.{'\n'}
           Qual o seu interesse?
         </Text>
-        {/* BOTÕES */}
         <View style={styles.buttonsContainer}>
+          {/* A navegação agora é direta. O layout irá proteger as rotas. */}
           <Button
             title="ADOTAR"
-            onPress={() => {
-              router.navigate('/adopt');
-            }}
+            onPress={() => router.push('/(drawer)/pets')}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
-
           <Button
             title="AJUDAR"
             onPress={() => {
-              // TODO: Implementar navegação para a tela de ajudar
+              /* Lógica de navegação para ajudar */
             }}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
           <Button
             title="CADASTRAR ANIMAL"
-            onPress={() => {
-              router.navigate('/register-pet');
-            }}
+            onPress={() => router.push('/(drawer)/register-pet')}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
         </View>
 
-        <TouchableOpacity
-          onPress={() => {
-            router.navigate('./auth-options');
-          }}
-        >
+        <TouchableOpacity onPress={() => router.push('/(auth)')}>
           <Text style={styles.loginText}>login</Text>
         </TouchableOpacity>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons'; // <-- 1. Mude a importação para Feather
+import { Feather } from '@expo/vector-icons';
 
 interface RadioGroupProps {
   label: string;
@@ -9,7 +9,12 @@ interface RadioGroupProps {
   onValueChange: (value: string) => void;
 }
 
-const RadioGroup: React.FC<RadioGroupProps> = ({ label, options, selectedValue, onValueChange }) => {
+const RadioGroup: React.FC<RadioGroupProps> = ({
+  label,
+  options,
+  selectedValue,
+  onValueChange,
+}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>

@@ -1,9 +1,9 @@
-import CustomSafeArea from '../components/CustomSafeArea';
-import Header from '../components/Header';
-import Button from '../components/Button';
-import CheckboxGroup from '../components/CheckboxGroup';
-import BasicForm from '../components/BasicForm';
-import InputText from '../components/Input';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import Header from '@/components/Header';
+import Button from '@/components/Button';
+import CheckboxGroup from '@/components/CheckboxGroup';
+import BasicForm from '@/components/BasicForm';
+import InputText from '@/components/Input';
 import {
   ScrollView,
   StyleSheet,

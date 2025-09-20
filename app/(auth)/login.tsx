@@ -16,15 +16,15 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { auth } from '../firebaseConfig';
-import Button from './components/Button';
-import SocialButton from './components/SocialButton';
+import { auth } from '@/firebaseConfig';
+import Button from '@/components/Button';
+import SocialButton from '@/components/SocialButton';
 import { useEffect, useState } from 'react';
-import CustomSafeArea from './components/CustomSafeArea';
+import CustomSafeArea from '@/components/CustomSafeArea';
 import { Feather } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import InputText from './components/Input';
+import InputText from '@/components/Input';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -49,7 +49,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace('/adopt');
+      router.replace('/(drawer)');
     } catch (error) {
       console.error('Email/Password auth error:', error);
       Alert.alert(
@@ -65,7 +65,7 @@ export default function LoginScreen() {
     setLoadingAnonymous(true);
     try {
       await signInAnonymously(auth);
-      router.replace('/');
+      router.replace('/(drawer)');
     } catch (error) {
       console.error('Anonymous auth error:', error);
       Alert.alert(
@@ -84,7 +84,7 @@ export default function LoginScreen() {
       const credential = GoogleAuthProvider.credential(id_token);
       signInWithCredential(auth, credential)
         .then(() => {
-          router.replace('/adopt');
+          router.replace('/(drawer)');
         })
         .catch((error) => {
           console.error('Google Sign-In Error:', error);
