@@ -1,25 +1,19 @@
 import { router, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../firebaseConfig';
 import { View, ActivityIndicator } from 'react-native';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function ProtectedLayout() {
-  const [loading, setLoading] = React.useState(true);
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user || user.isAnonymous) {
-        router.replace('/auth-options');
-      } else {
-        setLoading(false);
-      }
-    });
+    // Apenas verifique se não está carregando e não está autenticado.
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/auth-options');
+    }
+  }, [isLoading, isAuthenticated]); // Re-execute o efeito quando estes valores mudarem
 
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#88C9BF" />
@@ -27,5 +21,6 @@ export default function ProtectedLayout() {
     );
   }
 
+  // Se passou pelo loading e está autenticado, renderiza as rotas filhas.
   return <Stack screenOptions={{ headerShown: false }} />;
 }
