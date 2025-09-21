@@ -1,32 +1,37 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RadioGroupProps {
-  label: string;
+  name: string; // Nome do campo, obrigatório para integração com Form
+  label?: string;
   options: string[];
-  selectedValue: string | null;
-  onValueChange: (value: string) => void;
+  selectedValue?: string | null;
+  onValueChange?: (value: string) => void;
+  style?: any; // Para suportar estilos personalizados
+  error?: string | null; // Para exibir erros de validação
 }
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
+  name,
   label,
   options,
-  selectedValue,
+  selectedValue = null,
   onValueChange,
+  style,
+  error,
 }) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.container, style]}>
+      {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.optionsContainer}>
         {options.map((option) => (
           <TouchableOpacity
             key={option}
             style={styles.option}
-            onPress={() => onValueChange(option)}
+            onPress={() => onValueChange?.(option)}
             activeOpacity={0.7}
           >
-            {/* 2. Troque o componente e os nomes dos ícones */}
             <Feather
               name={selectedValue === option ? 'check-circle' : 'circle'}
               size={24}
@@ -36,6 +41,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
           </TouchableOpacity>
         ))}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -64,6 +70,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#434343',
   },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 5,
+  },
 });
 
-export default RadioGroup;
+export default React.memo(RadioGroup);

@@ -7,12 +7,14 @@ import React, {
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
+import { router } from 'expo-router';
 
 interface AuthContextType {
   user: User | null;
   roles: { [key: string]: boolean };
   isAuthenticated: boolean;
   isLoading: boolean;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   roles: {},
   isAuthenticated: false,
   isLoading: true,
+  logout: async () => Promise.resolve(),
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -47,6 +50,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     roles,
     isAuthenticated: !!user,
+    logout: async () => {
+      await auth.signOut();
+      setUser(null);
+      setRoles({});
+      router.replace('/login');
+    },
     isLoading,
   };
 

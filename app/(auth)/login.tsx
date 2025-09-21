@@ -1,10 +1,20 @@
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import { Form, FormHandle } from '@/components/Form';
+import InputText from '@/components/Input';
+import SocialButton from '@/components/SocialButton';
+import { auth } from '@/firebaseConfig';
+import { Feather } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import {
   GoogleAuthProvider,
   signInAnonymously,
   signInWithCredential,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -16,24 +26,19 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { auth } from '@/firebaseConfig';
-import Button from '@/components/Button';
-import SocialButton from '@/components/SocialButton';
-import { useEffect, useState } from 'react';
-import CustomSafeArea from '@/components/CustomSafeArea';
-import { Feather } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import InputText from '@/components/Input';
 
 WebBrowser.maybeCompleteAuthSession();
 
+type LoginData = {
+  email: string;
+  password: string;
+};
+
 export default function LoginScreen() {
+  const formRef = useRef<FormHandle>(null);
   const [loading, setLoading] = useState(false);
   const [loadingAnonymous, setLoadingAnonymous] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   const [requestGoogle, responseGoogle, promptAsyncGoogle] =
     Google.useAuthRequest({
@@ -46,18 +51,37 @@ export default function LoginScreen() {
     });
 
   const handleEmailPasswordLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace('/(drawer)');
-    } catch (error) {
-      console.error('Email/Password auth error:', error);
-      Alert.alert(
-        'Erro de Autenticação',
-        'Não foi possível fazer o login. Verifique suas credenciais.',
-      );
-    } finally {
-      setLoading(false);
+    if (formRef.current) {
+      const {
+        formValues,
+        hasErrors,
+        setFormError
+      } = formRef.current;
+      const loginData = formValues as LoginData;
+      setFormError(null);
+
+      if (hasErrors()) {
+        return null;
+      }
+
+      setLoading(true);
+      try {
+        await signInWithEmailAndPassword(
+          auth,
+          loginData.email,
+          loginData.password,
+        );
+        router.replace('/(drawer)');
+      } catch (error) {
+        setFormError('Email ou senha inválidos.');
+        console.error('Email/Password auth error:', error);
+        Alert.alert(
+          'Erro de Autenticação',
+          'Não foi possível fazer o login. Verifique suas credenciais.',
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -111,61 +135,59 @@ export default function LoginScreen() {
         >
           <Text style={styles.title}>Login</Text>
 
-          <View style={styles.inputContainer}>
+          <Form ref={formRef} style={styles.inputContainer}>
             <InputText
+              name="email"
               inputType="email"
               style={styles.input}
               placeholder="Email"
               placeholderTextColor="#BDBDBD"
-              value={email}
-              onChangeText={setEmail}
               autoCapitalize="none"
             />
             <InputText
+              name="password"
               inputType="password"
               style={styles.input}
               placeholder="Senha"
               placeholderTextColor="#BDBDBD"
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <Button
-              title="ENTRAR"
-              onPress={handleEmailPasswordLogin}
-              loading={loading}
-              backgroundColor="#FFD358"
-              textColor="#434343"
-              textStyle={{ fontWeight: 'bold' }}
-              style={styles.button}
             />
 
-            <Button
-              title="ENTRAR COMO ANÔNIMO"
-              onPress={handleAnonymousLogin}
-              loading={loadingAnonymous}
-              backgroundColor="#FFD358"
-              textColor="#434343"
-              textStyle={{ fontWeight: 'bold' }}
-              style={styles.button}
-            />
+            <View style={styles.buttonContainer}>
+              <Button
+                title="ENTRAR"
+                onPress={handleEmailPasswordLogin}
+                loading={loading}
+                backgroundColor="#FFD358"
+                textColor="#434343"
+                textStyle={{ fontWeight: 'bold' }}
+                style={styles.button}
+              />
 
-            <SocialButton
-              title="ENTRAR COM GOOGLE"
-              onPress={() => {
-                if (requestGoogle) {
-                  promptAsyncGoogle();
-                }
-              }}
-              iconName="google"
-              style={{ backgroundColor: '#FFFFFF' }}
-              textStyle={{ color: '#434343' }}
-              iconColor="#db4437"
-              loading={loadingGoogle}
-            />
-          </View>
+              <Button
+                title="ENTRAR COMO ANÔNIMO"
+                onPress={handleAnonymousLogin}
+                loading={loadingAnonymous}
+                backgroundColor="#FFD358"
+                textColor="#434343"
+                textStyle={{ fontWeight: 'bold' }}
+                style={styles.button}
+              />
+
+              <SocialButton
+                title="ENTRAR COM GOOGLE"
+                onPress={() => {
+                  if (requestGoogle) {
+                    promptAsyncGoogle();
+                  }
+                }}
+                iconName="google"
+                style={{ backgroundColor: '#FFFFFF' }}
+                textStyle={{ color: '#434343' }}
+                iconColor="#db4437"
+                loading={loadingGoogle}
+              />
+            </View>
+          </Form>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </CustomSafeArea>

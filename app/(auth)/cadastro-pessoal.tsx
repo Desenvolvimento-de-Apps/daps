@@ -1,6 +1,18 @@
+import AdicionarFotoButton from '@/components/AdicionarFotoButton';
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import { Form, FormHandle } from '@/components/Form';
+import Header from '@/components/Header';
+import InputText from '@/components/Input';
+import { auth, db } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { FirebaseError } from 'firebase/app';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useRef } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,13 +21,91 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AdicionarFotoButton from '@/components/AdicionarFotoButton';
-import Button from '@/components/Button';
-import CustomSafeArea from '@/components/CustomSafeArea';
-import Header from '@/components/Header';
-import InputText from '@/components/Input';
+import InputMasks from '../utils/masks';
+import { validateNomeUsuario } from '../utils/validators';
+
+type UserData = {
+  nome: string;
+  idade: string;
+  email: string;
+  estado: string;
+  cidade: string;
+  endereco: string;
+  telefone: string;
+  nomeUsuario: string;
+  senha: string;
+  confirmacaoSenha: string;
+};
 
 export default function CadastroPessoal() {
+  const formRef = useRef<FormHandle>(null);
+  const onSubmit = async () => {
+    if (formRef.current) {
+      const {
+        formValues,
+        hasErrors,
+        setFieldError: setError,
+      } = formRef.current;
+      if (hasErrors()) {
+        return null;
+      }
+      const { email, senha, confirmacaoSenha, ...userData } =
+        formValues as UserData;
+
+      if (senha !== confirmacaoSenha) {
+        setError('confirmacaoSenha', 'As senhas não coincidem.');
+        return null;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          senha,
+        );
+
+        const user = {
+          email: userCredential.user.email,
+          ...userData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        if (userData.nome) {
+          const userDocRef = doc(db, 'users', userCredential.user.uid);
+          await setDoc(userDocRef, user);
+        }
+
+        console.log('Usuário criado com sucesso!');
+        router.replace('/login');
+      } catch (error) {
+        if (error instanceof FirebaseError) {
+          switch (error.code) {
+            case 'auth/email-already-in-use':
+              setError('email', 'Email já está em uso.');
+              break;
+            case 'auth/weak-password':
+              setError(
+                'senha',
+                'Senha é muito fraca. Deve ter no mínimo 6 caracteres.',
+              );
+              break;
+            default:
+              Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
+              console.error(
+                'Ocorreu um erro do Firebase ao criar o usuário:',
+                error.message,
+              );
+          }
+        } else {
+          console.error('Erro desconhecido ao criar o usuário:', error);
+          Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
+        }
+        return null;
+      }
+    }
+  };
+
   return (
     <CustomSafeArea style={styles.safeArea}>
       <Header
@@ -45,35 +135,61 @@ export default function CadastroPessoal() {
           </View>
 
           {/* FORMULÁRIO DE CADASTRO */}
-          <View style={styles.form}>
+          <Form ref={formRef} style={styles.form}>
             {/* INFORMAÇÕES PESSOAIS */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES PESSOAIS</Text>
 
-              <InputText inputType="text" placeholder="Nome Completo" />
+              <InputText
+                name="nome"
+                inputType="text"
+                placeholder="Nome Completo"
+              />
 
-              <InputText inputType="number" placeholder="Idade" />
+              <InputText name="idade" inputType="number" placeholder="Idade" />
 
-              <InputText inputType="email" placeholder="E-mail" />
+              <InputText name="email" inputType="email" placeholder="E-mail" />
 
-              <InputText inputType="text" placeholder="Estado" />
+              <InputText name="estado" inputType="text" placeholder="Estado" />
 
-              <InputText inputType="text" placeholder="Cidade" />
+              <InputText name="cidade" inputType="text" placeholder="Cidade" />
 
-              <InputText inputType="text" placeholder="Endereço" />
+              <InputText
+                name="endereco"
+                inputType="text"
+                placeholder="Endereço"
+              />
 
-              <InputText inputType="phone" placeholder="Telefone" />
+              <InputText
+                name="telefone"
+                inputType="phone"
+                placeholder="Telefone"
+                maxLength={15}
+                mask={InputMasks.phone}
+              />
             </View>
 
             {/* INFORMAÇÕES DE PERFIL */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES DE PERFIL</Text>
 
-              <InputText inputType="text" placeholder="Nome de usuário" />
-
-              <InputText inputType="password" placeholder="Senha" />
+              <InputText
+                name="nomeUsuario"
+                inputType="text"
+                placeholder="Nome de usuário"
+                customValidator={(value) =>
+                  validateNomeUsuario(value as string)
+                }
+              />
 
               <InputText
+                name="senha"
+                inputType="password"
+                placeholder="Senha"
+              />
+
+              <InputText
+                name="confirmacaoSenha"
                 inputType="password"
                 placeholder="Confirmação de senha"
               />
@@ -93,9 +209,9 @@ export default function CadastroPessoal() {
               textColor="#434343"
               textStyle={{ fontWeight: 'bold' }}
               title="FAZER CADASTRO"
-              onPress={() => {}}
+              onPress={onSubmit}
             />
-          </View>
+          </Form>
         </ScrollView>
       </KeyboardAvoidingView>
     </CustomSafeArea>
