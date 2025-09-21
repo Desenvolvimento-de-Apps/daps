@@ -9,6 +9,7 @@ import {
 interface InputProps {
   name: string;
   placeholder: string;
+  required?: boolean;
   inputType: 'text' | 'password' | 'email' | 'number' | 'address' | 'phone';
   error?: string | null;
   secureTextEntry?: boolean;

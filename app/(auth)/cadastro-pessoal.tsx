@@ -8,8 +8,8 @@ import { auth, db } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useRef } from 'react';
 import {
   Alert,
@@ -22,7 +22,6 @@ import {
   View,
 } from 'react-native';
 import InputMasks from '../utils/masks';
-import { validateNomeUsuario } from '../utils/validators';
 
 type UserData = {
   nome: string;
@@ -38,70 +37,76 @@ type UserData = {
 };
 
 export default function CadastroPessoal() {
-  const formRef = useRef<FormHandle>(null);
-  const onSubmit = async () => {
-    if (formRef.current) {
-      const {
-        formValues,
-        hasErrors,
-        setFieldError: setError,
-      } = formRef.current;
-      if (hasErrors()) {
-        return null;
-      }
-      const { email, senha, confirmacaoSenha, ...userData } =
-        formValues as UserData;
+  const formRef = useRef<FormHandle<UserData>>(null);
 
-      if (senha !== confirmacaoSenha) {
-        setError('confirmacaoSenha', 'As senhas não coincidem.');
-        return null;
-      }
+  const handleSubmit = async (values: UserData): Promise<void> => {
+    let userCredential: UserCredential | null = null;
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          senha,
+    try {
+      const { email, senha, confirmacaoSenha, ...userData } = values;
+
+      userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const uid = userCredential.user.uid;
+
+      const usernameRef = doc(db, 'usernames', userData.nomeUsuario);
+      const usernameDoc = await getDoc(usernameRef);
+
+      if (usernameDoc.exists()) {
+        throw new FirebaseError(
+          'nome-usuario-already-in-use',
+          'Este nome de usuário já está em uso.',
         );
+      }
 
-        const user = {
-          email: userCredential.user.email,
-          ...userData,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      await setDoc(usernameRef, { uid });
+      const userRef = doc(db, 'users', uid);
+      await setDoc(userRef, {
+        ...userData,
+        uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
 
-        if (userData.nome) {
-          const userDocRef = doc(db, 'users', userCredential.user.uid);
-          await setDoc(userDocRef, user);
+      Alert.alert(
+        'Cadastro Bem-Sucedido',
+        'Seu cadastro foi realizado com sucesso!',
+      );
+      router.replace('/(drawer)');
+    } catch (error) {
+      if (error instanceof FirebaseError && formRef.current) {
+        const { setFieldError } = formRef.current;
+
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            setFieldError('email', 'Email já está em uso.');
+            break;
+          case 'auth/weak-password':
+            setFieldError('senha', 'Senha muito fraca (mínimo 6 caracteres).');
+            break;
+          case 'nome-usuario-already-in-use':
+            setFieldError(
+              'nomeUsuario',
+              'Este nome de usuário já está em uso.',
+            );
+            break;
+          case 'missing-username':
+            setFieldError('nomeUsuario', 'O nome de usuário é obrigatório.');
+            break;
+          default:
+            Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
+            console.error('Erro Firebase ao criar o usuário:', error.message);
         }
 
-        console.log('Usuário criado com sucesso!');
-        router.replace('/login');
-      } catch (error) {
-        if (error instanceof FirebaseError) {
-          switch (error.code) {
-            case 'auth/email-already-in-use':
-              setError('email', 'Email já está em uso.');
-              break;
-            case 'auth/weak-password':
-              setError(
-                'senha',
-                'Senha é muito fraca. Deve ter no mínimo 6 caracteres.',
-              );
-              break;
-            default:
-              Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
-              console.error(
-                'Ocorreu um erro do Firebase ao criar o usuário:',
-                error.message,
-              );
+        if (userCredential) {
+          try {
+            await userCredential.user.delete();
+          } catch (e) {
+            console.warn('Falha ao remover usuário após erro:', e);
           }
-        } else {
-          console.error('Erro desconhecido ao criar o usuário:', error);
-          Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
         }
-        return null;
+      } else {
+        console.error('Erro desconhecido ao criar o usuário:', error);
+        Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
       }
     }
   };
@@ -135,7 +140,7 @@ export default function CadastroPessoal() {
           </View>
 
           {/* FORMULÁRIO DE CADASTRO */}
-          <Form ref={formRef} style={styles.form}>
+          <Form onSubmit={handleSubmit} ref={formRef} style={styles.form}>
             {/* INFORMAÇÕES PESSOAIS */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES PESSOAIS</Text>
@@ -148,7 +153,12 @@ export default function CadastroPessoal() {
 
               <InputText name="idade" inputType="number" placeholder="Idade" />
 
-              <InputText name="email" inputType="email" placeholder="E-mail" />
+              <InputText
+                name="email"
+                inputType="email"
+                placeholder="E-mail"
+                required
+              />
 
               <InputText name="estado" inputType="text" placeholder="Estado" />
 
@@ -177,27 +187,32 @@ export default function CadastroPessoal() {
                 name="nomeUsuario"
                 inputType="text"
                 placeholder="Nome de usuário"
-                customValidator={(value) =>
-                  validateNomeUsuario(value as string)
-                }
+                required
               />
 
               <InputText
                 name="senha"
                 inputType="password"
                 placeholder="Senha"
+                required
               />
 
               <InputText
                 name="confirmacaoSenha"
                 inputType="password"
                 placeholder="Confirmação de senha"
+                required
+                customValidator={(value) => {
+                  if (value !== formRef.current?.getValues().senha) {
+                    return 'As senhas não coincidem';
+                  }
+                  return null;
+                }}
               />
             </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionText}>FOTO DE PERFIL</Text>
-
               <AdicionarFotoButton
                 style={styles.adicionarFotoButton}
                 onPress={() => {}}
@@ -209,7 +224,7 @@ export default function CadastroPessoal() {
               textColor="#434343"
               textStyle={{ fontWeight: 'bold' }}
               title="FAZER CADASTRO"
-              onPress={onSubmit}
+              onPress={() => formRef.current?.submit()}
             />
           </Form>
         </ScrollView>

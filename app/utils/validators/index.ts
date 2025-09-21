@@ -1,48 +1,42 @@
-export const validateEmail = (
-  email?: string,
-  minLength?: number,
-): string | null => {
-  if (!email) {
-    return null;
-  }
-
-  if (minLength && email.length < minLength) {
-    return `O e-mail deve ter pelo menos ${minLength} caracteres.`;
-  }
-
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  if (!emailRegex.test(email)) {
-    return 'Formato de e-mail inválido.';
-  }
-
-  return null;
-};
-
-export const validateNomeUsuario = (nomeUsuario?: string): string | null => {
-  if (!nomeUsuario) {
-    return null;
-  }
-
-  console.log('TO AQUI!');
-
-  const usuarioRegex = /^[a-zA-Z0-9_]+$/;
-
-  if (!usuarioRegex.test(nomeUsuario)) {
-    return 'Nome de usuário inválido. Apenas letras, números e underlines são permitidos.';
-  }
-
-  return null;
-};
-
 export default function validateFormField(
   name: string,
-  value: string | string[],
+  value: string | string[] | null,
   minLength?: number,
 ): string | null {
-  switch (name) {
+  if (minLength && typeof value === 'string' && value.length < minLength) {
+    return `Este campo deve ter pelo menos ${minLength} caracteres`;
+  }
+
+switch (name) {
     case 'email':
-      return validateEmail(value as string, minLength);
+      if (typeof value === 'string') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(value) ? null : 'E-mail inválido';
+      }
+      return null;
+    // case 'idade':
+    //   if (typeof value === 'string') {
+    //     return /^\d+$/.test(value) && Number(value) >= 0 ? null : 'Idade deve ser um número válido';
+    //   }
+    //   return null;
+    // case 'telefone':
+    //   if (typeof value === 'string') {
+    //     return value.length >= 10 ? null : 'Telefone inválido';
+    //   }
+    //   return null;
+    case 'senha':
+      if (typeof value === 'string') {
+        return value.length >= 6 ? null : 'Senha deve ter pelo menos 6 caracteres';
+      }
+      return null;
+    case 'nomeUsuario':
+      if (typeof value === 'string') {
+        const usuarioRegex = /^[a-zA-Z0-9_]+$/;
+        return usuarioRegex.test(value)
+          ? null
+          : 'Apenas letras, números e underlines são permitidos.';
+      }
+      return null;
     default:
       return null;
   }
