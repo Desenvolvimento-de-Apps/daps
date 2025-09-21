@@ -4,6 +4,7 @@ import React, {
   forwardRef,
   ReactNode,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useState,
 } from 'react';
@@ -15,7 +16,7 @@ import RadioGroup from './RadioGroup';
 interface FormProps<T extends Record<string, string | string[] | null>> {
   children: ReactNode;
   style?: object;
-  onSubmit?: (values: T) => Promise<unknown>; // Updated to support async
+  onSubmit?: (values: T) => Promise<unknown>;
 }
 
 interface FieldProps {
@@ -37,7 +38,7 @@ export interface FormHandle<
   setFieldError: (name: string, error: string | null) => void;
   setFormError: (error: string | null) => void;
   validateAllFields: () => boolean;
-  submit: () => Promise<void>; // Updated to return Promise<void>
+  submit: () => Promise<void>;
 }
 
 function InnerForm<T extends Record<string, string | string[] | null>>(
@@ -184,16 +185,15 @@ function InnerForm<T extends Record<string, string | string[] | null>>(
   const submit = useCallback(async () => {
     setFieldErrors({});
     setFormError(null);
-    const hasErros = validateAllFields();
 
-    if (onSubmit && hasErros) {
-      Object.values(formValues).forEach((value) => {
-        if (typeof value === 'string') {
-          value.trim();
-        }
-      })
+    const isValid = validateAllFields();
+    if (!isValid) {
+      return;
+    }
 
-      await onSubmit(formValues);
+    if (onSubmit && !hasErrors()) {
+      await onSubmit(formValues).finally(() => {
+      });
     }
   }, [
     formValues,

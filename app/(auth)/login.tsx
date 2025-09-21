@@ -35,7 +35,7 @@ type LoginData = {
 };
 
 export default function LoginScreen() {
-  const formRef = useRef<FormHandle>(null);
+  const formRef = useRef<FormHandle<LoginData>>(null);
   const [loading, setLoading] = useState(false);
   const [loadingAnonymous, setLoadingAnonymous] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -50,38 +50,17 @@ export default function LoginScreen() {
         '270765835083-k5sb1pi685093qlcl9j65366vtpcqk2s.apps.googleusercontent.com',
     });
 
-  const handleEmailPasswordLogin = async () => {
-    if (formRef.current) {
-      const {
-        formValues,
-        hasErrors,
-        setFormError
-      } = formRef.current;
-      const loginData = formValues as LoginData;
-      setFormError(null);
-
-      if (hasErrors()) {
-        return null;
-      }
-
-      setLoading(true);
-      try {
-        await signInWithEmailAndPassword(
-          auth,
-          loginData.email,
-          loginData.password,
-        );
-        router.replace('/(drawer)');
-      } catch (error) {
-        setFormError('Email ou senha inválidos.');
-        console.error('Email/Password auth error:', error);
-        Alert.alert(
-          'Erro de Autenticação',
-          'Não foi possível fazer o login. Verifique suas credenciais.',
-        );
-      } finally {
-        setLoading(false);
-      }
+  const handleEmailPasswordLogin = async (values: LoginData) => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      router.replace('/(drawer)');
+    } catch (error) {
+      if (formRef.current)
+        formRef.current.setFormError('Email ou senha inválidos.');
+      console.error('Email/Password auth error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,7 +114,11 @@ export default function LoginScreen() {
         >
           <Text style={styles.title}>Login</Text>
 
-          <Form ref={formRef} style={styles.inputContainer}>
+          <Form
+            onSubmit={handleEmailPasswordLogin}
+            ref={formRef}
+            style={styles.inputContainer}
+          >
             <InputText
               name="email"
               inputType="email"
@@ -155,7 +138,7 @@ export default function LoginScreen() {
             <View style={styles.buttonContainer}>
               <Button
                 title="ENTRAR"
-                onPress={handleEmailPasswordLogin}
+                onPress={() => formRef.current?.submit()}
                 loading={loading}
                 backgroundColor="#FFD358"
                 textColor="#434343"
