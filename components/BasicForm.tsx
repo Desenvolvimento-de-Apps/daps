@@ -40,6 +40,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>ESPÉCIE</Text>
       <RadioGroup
+        name="especie"
         label=""
         options={['Cachorro', 'Gato']}
         selectedValue={especie}
@@ -48,6 +49,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>SEXO</Text>
       <RadioGroup
+        name="sexo"
         label=""
         options={['Macho', 'Fêmea']}
         selectedValue={sexo}
@@ -56,6 +58,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>PORTE</Text>
       <RadioGroup
+        name="porte"
         label=""
         options={['Pequeno', 'Médio', 'Grande']}
         selectedValue={porte}
@@ -64,6 +67,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>IDADE</Text>
       <RadioGroup
+        name="idade"
         label=""
         options={['Filhote', 'Adulto', 'Idoso']}
         selectedValue={idade}
@@ -72,6 +76,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>TEMPERAMENTO</Text>
       <CheckboxGroup
+        name="temperamento"
         label=""
         options={[
           'Brincalhão',
@@ -88,6 +93,7 @@ const BasicForm: React.FC<BasicFormProps> = ({ title }) => {
 
       <Text style={styles.formText}>SAÚDE</Text>
       <CheckboxGroup
+        name="saude"
         label=""
         options={['Vacinado', 'Vermifugado', 'Castrado', 'Doente']}
         selectedValues={saude}

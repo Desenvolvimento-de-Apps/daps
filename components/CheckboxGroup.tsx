@@ -1,41 +1,44 @@
+import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
   ViewStyle,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 
 interface CheckboxGroupProps {
-  label: string;
+  name: string; // Nome do campo, obrigatório para integração com Form
+  label?: string;
   options: string[];
-  selectedValues: string[];
-  onValuesChange: (values: string[]) => void;
+  selectedValues?: string[];
+  onValuesChange?: (values: string[]) => void;
   quantidadePorLinha?: number;
   style?: ViewStyle;
+  error?: string | null; // Para exibir erros de validação
 }
 
 const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
+  name,
   label,
   options,
-  selectedValues,
+  selectedValues = [],
   onValuesChange,
   quantidadePorLinha = 3,
   style,
+  error,
 }) => {
   const handleToggle = (option: string) => {
-    if (selectedValues.includes(option)) {
-      onValuesChange(selectedValues.filter((value) => value !== option));
-    } else {
-      onValuesChange([...selectedValues, option]);
-    }
+    const newValues = selectedValues.includes(option)
+      ? selectedValues.filter((value) => value !== option)
+      : [...selectedValues, option];
+    onValuesChange?.(newValues);
   };
 
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.label}>{label}</Text>
+      {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.optionsContainer}>
         {options.map((option) => (
           <TouchableOpacity
@@ -53,6 +56,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
           </TouchableOpacity>
         ))}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -82,6 +86,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     color: '#434343',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 5,
   },
 });
 

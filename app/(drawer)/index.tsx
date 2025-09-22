@@ -1,13 +1,15 @@
-import Feather from '@expo/vector-icons/Feather';
-import { router, useNavigation } from 'expo-router';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
+import { useAuth } from '@/contexts/AuthContext';
+import Feather from '@expo/vector-icons/Feather';
 import { DrawerActions } from '@react-navigation/native';
+import { router, useNavigation } from 'expo-router';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
+  const auth = useAuth();
 
   return (
     <CustomSafeArea>
@@ -54,9 +56,15 @@ export default function WelcomeScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={() => router.push('/(auth)')}>
-          <Text style={styles.loginText}>login</Text>
-        </TouchableOpacity>
+        {auth.isAuthenticated && auth.user?.isAnonymous === false ? (
+          <TouchableOpacity onPress={() => auth.logout()}>
+            <Text style={styles.loginText}>logout</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => router.push('/(auth)')}>
+            <Text style={styles.loginText}>login</Text>
+          </TouchableOpacity>
+        )}
 
         <Image
           source={require('../../assets/logos/meau.jpg')}

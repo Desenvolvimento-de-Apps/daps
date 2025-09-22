@@ -112,6 +112,7 @@ export default function RegisterPetScreen() {
 
             <Text style={styles.formText}>EXIGÊNCIAS PARA ADOÇÃO</Text>
             <CheckboxGroup
+              name="exigenciasAdocao"
               label=""
               options={[
                 'Termo de adoção',
@@ -125,6 +126,7 @@ export default function RegisterPetScreen() {
             />
 
             <CheckboxGroup
+              name="auxilio"
               label=""
               options={['1 mês', '3 meses', '6 meses']}
               selectedValues={acompanhamento}
@@ -157,6 +159,7 @@ export default function RegisterPetScreen() {
 
             <Text style={styles.formText}>EXIGÊNCIAS PARA APADRINHAMENTO</Text>
             <CheckboxGroup
+              name="exigenciasApadrinhamento"
               label=""
               options={['Termo de apadrinhamento', 'Auxilio financeiro']}
               selectedValues={exigencias}
@@ -165,6 +168,7 @@ export default function RegisterPetScreen() {
             />
 
             <CheckboxGroup
+              name="auxilio"
               label=""
               options={['Alimentação', 'Saúde', 'Objetos']}
               selectedValues={auxilio}
@@ -206,6 +210,7 @@ export default function RegisterPetScreen() {
 
             <Text style={styles.formText}>NECESSIDADES DO ANIMAL</Text>
             <CheckboxGroup
+              name="necessidades"
               label=""
               options={[
                 'Alimento',

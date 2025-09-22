@@ -1,6 +1,18 @@
+import AdicionarFotoButton from '@/components/AdicionarFotoButton';
+import Button from '@/components/Button';
+import CustomSafeArea from '@/components/CustomSafeArea';
+import { Form, FormHandle } from '@/components/Form';
+import Header from '@/components/Header';
+import InputText from '@/components/Input';
+import { auth, db } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { FirebaseError } from 'firebase/app';
+import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { useRef } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,13 +21,96 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AdicionarFotoButton from '@/components/AdicionarFotoButton';
-import Button from '@/components/Button';
-import CustomSafeArea from '@/components/CustomSafeArea';
-import Header from '@/components/Header';
-import InputText from '@/components/Input';
+import InputMasks from '../utils/masks';
+
+type UserData = {
+  nome: string;
+  idade: string;
+  email: string;
+  estado: string;
+  cidade: string;
+  endereco: string;
+  telefone: string;
+  nomeUsuario: string;
+  senha: string;
+  confirmacaoSenha: string;
+};
 
 export default function CadastroPessoal() {
+  const formRef = useRef<FormHandle<UserData>>(null);
+
+  const handleSubmit = async (values: UserData): Promise<void> => {
+    let userCredential: UserCredential | null = null;
+
+    try {
+      const { email, senha, confirmacaoSenha, ...userData } = values;
+
+      userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const uid = userCredential.user.uid;
+
+      const usernameRef = doc(db, 'usernames', userData.nomeUsuario);
+      const usernameDoc = await getDoc(usernameRef);
+
+      if (usernameDoc.exists()) {
+        throw new FirebaseError(
+          'nome-usuario-already-in-use',
+          'Este nome de usuário já está em uso.',
+        );
+      }
+
+      await setDoc(usernameRef, { uid });
+      const userRef = doc(db, 'users', uid);
+      await setDoc(userRef, {
+        ...userData,
+        uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      Alert.alert(
+        'Cadastro Bem-Sucedido',
+        'Seu cadastro foi realizado com sucesso!',
+      );
+      router.replace('/(drawer)');
+    } catch (error) {
+      if (error instanceof FirebaseError && formRef.current) {
+        const { setFieldError } = formRef.current;
+
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            setFieldError('email', 'Email já está em uso.');
+            break;
+          case 'auth/weak-password':
+            setFieldError('senha', 'Senha muito fraca (mínimo 6 caracteres).');
+            break;
+          case 'nome-usuario-already-in-use':
+            setFieldError(
+              'nomeUsuario',
+              'Este nome de usuário já está em uso.',
+            );
+            break;
+          case 'missing-username':
+            setFieldError('nomeUsuario', 'O nome de usuário é obrigatório.');
+            break;
+          default:
+            Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
+            console.error('Erro Firebase ao criar o usuário:', error.message);
+        }
+
+        if (userCredential) {
+          try {
+            await userCredential.user.delete();
+          } catch (e) {
+            console.warn('Falha ao remover usuário após erro:', e);
+          }
+        }
+      } else {
+        console.error('Erro desconhecido ao criar o usuário:', error);
+        Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
+      }
+    }
+  };
+
   return (
     <CustomSafeArea style={styles.safeArea}>
       <Header
@@ -45,43 +140,79 @@ export default function CadastroPessoal() {
           </View>
 
           {/* FORMULÁRIO DE CADASTRO */}
-          <View style={styles.form}>
+          <Form onSubmit={handleSubmit} ref={formRef} style={styles.form}>
             {/* INFORMAÇÕES PESSOAIS */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES PESSOAIS</Text>
 
-              <InputText inputType="text" placeholder="Nome Completo" />
+              <InputText
+                name="nome"
+                inputType="text"
+                placeholder="Nome Completo"
+              />
 
-              <InputText inputType="number" placeholder="Idade" />
+              <InputText name="idade" inputType="number" placeholder="Idade" />
 
-              <InputText inputType="email" placeholder="E-mail" />
+              <InputText
+                name="email"
+                inputType="email"
+                placeholder="E-mail"
+                required
+              />
 
-              <InputText inputType="text" placeholder="Estado" />
+              <InputText name="estado" inputType="text" placeholder="Estado" />
 
-              <InputText inputType="text" placeholder="Cidade" />
+              <InputText name="cidade" inputType="text" placeholder="Cidade" />
 
-              <InputText inputType="text" placeholder="Endereço" />
+              <InputText
+                name="endereco"
+                inputType="text"
+                placeholder="Endereço"
+              />
 
-              <InputText inputType="phone" placeholder="Telefone" />
+              <InputText
+                name="telefone"
+                inputType="phone"
+                placeholder="Telefone"
+                maxLength={15}
+                mask={InputMasks.phone}
+              />
             </View>
 
             {/* INFORMAÇÕES DE PERFIL */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES DE PERFIL</Text>
 
-              <InputText inputType="text" placeholder="Nome de usuário" />
-
-              <InputText inputType="password" placeholder="Senha" />
+              <InputText
+                name="nomeUsuario"
+                inputType="text"
+                placeholder="Nome de usuário"
+                required
+              />
 
               <InputText
+                name="senha"
+                inputType="password"
+                placeholder="Senha"
+                required
+              />
+
+              <InputText
+                name="confirmacaoSenha"
                 inputType="password"
                 placeholder="Confirmação de senha"
+                required
+                customValidator={(value) => {
+                  if (value !== formRef.current?.getValues().senha) {
+                    return 'As senhas não coincidem';
+                  }
+                  return null;
+                }}
               />
             </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionText}>FOTO DE PERFIL</Text>
-
               <AdicionarFotoButton
                 style={styles.adicionarFotoButton}
                 onPress={() => {}}
@@ -93,9 +224,9 @@ export default function CadastroPessoal() {
               textColor="#434343"
               textStyle={{ fontWeight: 'bold' }}
               title="FAZER CADASTRO"
-              onPress={() => {}}
+              onPress={() => formRef.current?.submit()}
             />
-          </View>
+          </Form>
         </ScrollView>
       </KeyboardAvoidingView>
     </CustomSafeArea>
