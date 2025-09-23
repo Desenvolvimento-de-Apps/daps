@@ -9,14 +9,16 @@ import {
 } from 'react-native';
 
 interface CheckboxGroupProps {
-  name: string; // Nome do campo, obrigatório para integração com Form
+  name: string;
   label?: string;
   options: string[];
   selectedValues?: string[];
   onValuesChange?: (values: string[]) => void;
   quantidadePorLinha?: number;
   style?: ViewStyle;
-  error?: string | null; // Para exibir erros de validação
+  error?: string | null;
+  disabled?: boolean;
+  singleSelection?: boolean;
 }
 
 const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
@@ -28,11 +30,19 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
   quantidadePorLinha = 3,
   style,
   error,
+  disabled = false,
+  singleSelection = false,
 }) => {
   const handleToggle = (option: string) => {
-    const newValues = selectedValues.includes(option)
-      ? selectedValues.filter((value) => value !== option)
-      : [...selectedValues, option];
+    let newValues: string[];
+
+    if (singleSelection) {
+      newValues = selectedValues.includes(option) ? [] : [option];
+    } else {
+      newValues = selectedValues.includes(option)
+        ? selectedValues.filter((value) => value !== option)
+        : [...selectedValues, option];
+    }
     onValuesChange?.(newValues);
   };
 
@@ -46,13 +56,16 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
             style={[styles.option, { width: `${100 / quantidadePorLinha}%` }]}
             onPress={() => handleToggle(option)}
             activeOpacity={0.7}
+            disabled={disabled}
           >
             <Feather
               name={selectedValues.includes(option) ? 'check-square' : 'square'}
               size={24}
               color={selectedValues.includes(option) ? '#FFA500' : '#757575'}
             />
-            <Text style={styles.optionText}>{option}</Text>
+            <Text style={[styles.optionText, disabled && styles.disabledText]}>
+              {option}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -91,6 +104,9 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 12,
     marginTop: 5,
+  },
+  disabledText: {
+    opacity: 0.3,
   },
 });
 
