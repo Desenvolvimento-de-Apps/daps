@@ -2,50 +2,48 @@ import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import CheckboxGroup from '@/components/CheckboxGroup';
-import BasicForm from '@/components/BasicForm';
+import RadioGroup from '@/components/RadioGroup';
 import InputText from '@/components/Input';
+import AdicionarFotoButton from '@/components/AdicionarFotoButton';
+import { Form, FormHandle } from '@/components/Form';
+import { Alert, KeyboardAvoidingView } from 'react-native';
+import { auth, db } from '@/firebaseConfig';
+import { doc, collection, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+type Especie = 'Cachorro' | 'Gato';
+type Sexo = 'Macho' | 'Fêmea';
+type Porte = 'Pequeno' | 'Médio' | 'Grande';
+type Idade = 'Filhote' | 'Adulto' | 'Idoso';
+
+type Acompanhamento = '1 mês' | '3 mêses' | '6 mêses';
+
+type PetData = {
+  nome: string;
+  especie: Especie | null;
+  sexo: Sexo | null;
+  porte: Porte | null;
+  idade: Idade | null;
+  temperamento: string[] | null;
+  saude: string[] | null;
+  doencas: string;
+  exigencias: string[] | null;
+  acompanhamento: Acompanhamento | null;
+  sobre: string;
+};
 
 export default function RegisterPetScreen() {
-  const [adocaoAtivo, setAdocaoAtivo] = useState(false);
-  const [apadrinharAtivo, setApadrinharAtivo] = useState(false);
-  const [ajudaAtivo, setAjudaAtivo] = useState(false);
-
-  const COR_ATIVA = '#ffd358';
-  const COR_TEXTO_ATIVO = '#434343';
-  const COR_INATIVA = '#F1F2F2';
-  const COR_TEXTO_INATIVO = '#434343';
-
-  const handleAdocaoClick = () => {
-    const novoEstado = !adocaoAtivo;
-    setAdocaoAtivo(novoEstado);
-    // Se ativar Adoção, Apadrinhar é desativado
-    if (novoEstado) {
-      setApadrinharAtivo(false);
-    }
-  };
-
-  const handleApadrinharClick = () => {
-    const novoEstado = !apadrinharAtivo;
-    setApadrinharAtivo(novoEstado);
-    // Se ativar Apadrinhar, Adoção é desativado
-    if (novoEstado) {
-      setAdocaoAtivo(false);
-    }
-  };
-
-  const handleAjudaClick = () => {
-    setAjudaAtivo(!ajudaAtivo);
-  };
+  const formRef = useRef<FormHandle<PetData>>(null);
 
   const [especie, setEspecie] = useState<string | null>(null);
   const [sexo, setSexo] = useState<string | null>(null);
@@ -55,8 +53,75 @@ export default function RegisterPetScreen() {
   const [saude, setSaude] = useState<string[]>([]);
   const [exigencias, setExigencias] = useState<string[]>([]);
   const [acompanhamento, setAcompanhamento] = useState<string[]>([]);
-  const [auxilio, setAuxilio] = useState<string[]>([]);
-  const [necessidades, setNecessidades] = useState<string[]>([]);
+
+  const [isAcompanhamentoSelected, setIsAcompanhamentoSelected] =
+    useState(false);
+
+  useEffect(() => {
+    const isEnabled = exigencias.includes('Acompanhamento pós adoção');
+    setIsAcompanhamentoSelected(isEnabled);
+
+    if (!isEnabled) {
+      setAcompanhamento([]);
+    }
+  }, [exigencias]);
+
+  const cleanForm = () => {
+    setEspecie(null);
+    setSexo(null);
+    setPorte(null);
+    setIdade(null);
+    setTemperamentos([]);
+    setSaude([]);
+    setExigencias([]);
+    setAcompanhamento([]);
+
+    if (formRef.current) {
+      formRef.current.setFieldValue('nome', '');
+      formRef.current.setFieldValue('doencas', '');
+      formRef.current.setFieldValue('sobre', '');
+      formRef.current.setFieldValue('especie', null);
+      formRef.current.setFieldValue('sexo', null);
+      formRef.current.setFieldValue('porte', null);
+      formRef.current.setFieldValue('idade', null);
+      formRef.current.setFieldValue('temperamento', []);
+      formRef.current.setFieldValue('saude', []);
+      formRef.current.setFieldValue('exigencias', []);
+      formRef.current.setFieldValue('acompanhamento', []);
+    }
+  };
+
+  const handleSubmit = async (values: PetData): Promise<void> => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      Alert.alert('Erro', 'Você precisa estar logado para cadastrar um pet.');
+      return;
+    }
+
+    try {
+      const petDocRef = doc(collection(db, 'pets'));
+
+      const petDataToSave = {
+        ...values,
+        ownerUid: user.uid,
+        petId: petDocRef.id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await setDoc(petDocRef, petDataToSave);
+
+      Alert.alert('Sucesso!', 'O cadastro do pet foi realizado com sucesso.');
+      cleanForm();
+      router.replace('/(drawer)');
+    } catch (error) {
+      console.error('Erro ao cadastrar o pet:', error);
+      Alert.alert(
+        'Erro',
+        'Ocorreu um erro ao cadastrar o pet. Tente novamente.',
+      );
+    }
+  };
 
   return (
     <CustomSafeArea style={styles.container}>
@@ -73,46 +138,105 @@ export default function RegisterPetScreen() {
         }
         rightAction={null}
       />
-      <ScrollView style={styles.body}>
-        <Text>Tenho interesse em cadastrar o animal para:</Text>
-        <View style={styles.seletores}>
-          <Button
-            title="ADOÇÃO"
-            onPress={handleAdocaoClick}
-            disabled={apadrinharAtivo}
-            backgroundColor={adocaoAtivo ? COR_ATIVA : COR_INATIVA}
-            textColor={adocaoAtivo ? COR_TEXTO_ATIVO : COR_TEXTO_INATIVO}
-            style={styles.buttonWrapper}
-            borderRadius={2}
-          />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.content}
+      >
+        <ScrollView style={styles.body}>
+          <Form
+            onSubmit={handleSubmit}
+            ref={formRef}
+            style={styles.formContainer}
+          >
+            <Text style={styles.h1}>Adoção</Text>
+            <Text style={styles.formText}>NOME DO ANIMAL</Text>
+            <InputText
+              inputType="text"
+              style={styles.input}
+              placeholder="Nome do animal"
+              placeholderTextColor="#bdbdbd"
+              name="nome"
+            />
 
-          <Button
-            title="APADRINHAR"
-            onPress={handleApadrinharClick}
-            disabled={adocaoAtivo}
-            backgroundColor={apadrinharAtivo ? COR_ATIVA : COR_INATIVA}
-            textColor={apadrinharAtivo ? COR_TEXTO_ATIVO : COR_TEXTO_INATIVO}
-            style={styles.buttonWrapper}
-            borderRadius={2}
-          />
+            <Text style={styles.formText}>FOTOS DO ANIMAL</Text>
+            <AdicionarFotoButton
+              style={styles.adicionarFotoButton}
+              onPress={() => {}}
+            />
 
-          <Button
-            title="AJUDA"
-            onPress={handleAjudaClick}
-            backgroundColor={ajudaAtivo ? COR_ATIVA : COR_INATIVA}
-            textColor={ajudaAtivo ? COR_TEXTO_ATIVO : COR_TEXTO_INATIVO}
-            style={styles.buttonWrapper}
-            borderRadius={2}
-          />
-        </View>
+            <Text style={styles.formText}>ESPÉCIE</Text>
+            <RadioGroup
+              name="especie"
+              label=""
+              options={['Cachorro', 'Gato']}
+              selectedValue={especie}
+              onValueChange={setEspecie}
+            />
 
-        {adocaoAtivo && (
-          <View style={styles.formContainer}>
-            <BasicForm title="Adoção"></BasicForm>
+            <Text style={styles.formText}>SEXO</Text>
+            <RadioGroup
+              name="sexo"
+              label=""
+              options={['Macho', 'Fêmea']}
+              selectedValue={sexo}
+              onValueChange={setSexo}
+            />
+
+            <Text style={styles.formText}>PORTE</Text>
+            <RadioGroup
+              name="porte"
+              label=""
+              options={['Pequeno', 'Médio', 'Grande']}
+              selectedValue={porte}
+              onValueChange={setPorte}
+            />
+
+            <Text style={styles.formText}>IDADE</Text>
+            <RadioGroup
+              name="idade"
+              label=""
+              options={['Filhote', 'Adulto', 'Idoso']}
+              selectedValue={idade}
+              onValueChange={setIdade}
+            />
+
+            <Text style={styles.formText}>TEMPERAMENTO</Text>
+            <CheckboxGroup
+              name="temperamento"
+              label=""
+              options={[
+                'Brincalhão',
+                'Tímido',
+                'Calmo',
+                'Guarda',
+                'Amoroso',
+                'Preguiçoso',
+              ]}
+              selectedValues={temperamentos}
+              onValuesChange={setTemperamentos}
+              quantidadePorLinha={3}
+            />
+
+            <Text style={styles.formText}>SAÚDE</Text>
+            <CheckboxGroup
+              name="saude"
+              label=""
+              options={['Vacinado', 'Vermifugado', 'Castrado', 'Doente']}
+              selectedValues={saude}
+              onValuesChange={setSaude}
+              quantidadePorLinha={2}
+            />
+            <InputText
+              inputType="text"
+              name="doencas"
+              style={styles.input}
+              placeholder="Doenças do animal"
+              placeholderTextColor="#bdbdbd"
+            />
 
             <Text style={styles.formText}>EXIGÊNCIAS PARA ADOÇÃO</Text>
             <CheckboxGroup
-              name="exigenciasAdocao"
+              name="exigencias"
               label=""
               options={[
                 'Termo de adoção',
@@ -126,134 +250,34 @@ export default function RegisterPetScreen() {
             />
 
             <CheckboxGroup
-              name="auxilio"
+              name="acompanhamento"
               label=""
               options={['1 mês', '3 meses', '6 meses']}
               selectedValues={acompanhamento}
               onValuesChange={setAcompanhamento}
               quantidadePorLinha={1}
               style={{ marginLeft: 36 }}
+              disabled={!isAcompanhamentoSelected}
+              singleSelection={true}
             />
 
             <Text style={styles.formText}>SOBRE O ANIMAL</Text>
             <InputText
+              name="sobre"
               inputType="text"
-              style={styles.input}
               placeholder="Compartilhe a história do animal"
-              placeholderTextColor="#bdbdbd"
             />
 
             <Button
               title="COMPARTILHAR HISTÓRIA"
-              onPress={() => {}}
+              onPress={() => formRef.current?.submit()}
               backgroundColor="#ffd358"
               textColor="#434343"
               style={styles.button}
             />
-          </View>
-        )}
-
-        {apadrinharAtivo && (
-          <View style={styles.formContainer}>
-            <BasicForm title="Apadrinhar"></BasicForm>
-
-            <Text style={styles.formText}>EXIGÊNCIAS PARA APADRINHAMENTO</Text>
-            <CheckboxGroup
-              name="exigenciasApadrinhamento"
-              label=""
-              options={['Termo de apadrinhamento', 'Auxilio financeiro']}
-              selectedValues={exigencias}
-              onValuesChange={setExigencias}
-              quantidadePorLinha={1}
-            />
-
-            <CheckboxGroup
-              name="auxilio"
-              label=""
-              options={['Alimentação', 'Saúde', 'Objetos']}
-              selectedValues={auxilio}
-              onValuesChange={setAuxilio}
-              quantidadePorLinha={1}
-              style={{ marginLeft: 36 }}
-            />
-
-            <Text style={styles.formText}>SOBRE O ANIMAL</Text>
-            <InputText
-              inputType="text"
-              style={styles.input}
-              placeholder="Compartilhe a história do animal"
-              placeholderTextColor="#bdbdbd"
-            />
-
-            <Button
-              title="PROCURAR PADRINHO"
-              onPress={() => {}}
-              backgroundColor="#ffd358"
-              textColor="#434343"
-              style={styles.button}
-            />
-          </View>
-        )}
-
-        {ajudaAtivo && (
-          <View style={styles.formContainer}>
-            {!adocaoAtivo && !apadrinharAtivo && (
-              <BasicForm title="Ajudar"></BasicForm>
-            )}
-
-            {(adocaoAtivo || apadrinharAtivo) && (
-              <View style={styles.formContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.h1}>Ajudar</Text>
-              </View>
-            )}
-
-            <Text style={styles.formText}>NECESSIDADES DO ANIMAL</Text>
-            <CheckboxGroup
-              name="necessidades"
-              label=""
-              options={[
-                'Alimento',
-                'Auxílio financeiro',
-                'Medicamento',
-                'Objetos',
-              ]}
-              selectedValues={necessidades}
-              onValuesChange={setNecessidades}
-              quantidadePorLinha={1}
-            />
-
-            <InputText
-              inputType="text"
-              style={styles.input}
-              placeholder="Nome do medicamento"
-              placeholderTextColor="#bdbdbd"
-            />
-            <InputText
-              inputType="text"
-              style={styles.input}
-              placeholder="Especifique o(s) objeto(s)"
-              placeholderTextColor="#bdbdbd"
-            />
-
-            <Text style={styles.formText}>SOBRE O ANIMAL</Text>
-            <InputText
-              inputType="text"
-              style={styles.input}
-              placeholder="Compartilhe a história do animal"
-              placeholderTextColor="#bdbdbd"
-            />
-
-            <Button
-              title="COMPARTILHAR HISTÓRIA"
-              onPress={() => {}}
-              backgroundColor="#ffd358"
-              textColor="#434343"
-              style={styles.button}
-            />
-          </View>
-        )}
-      </ScrollView>
+          </Form>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </CustomSafeArea>
   );
 }
@@ -262,6 +286,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffffff',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
   },
   body: {
     flex: 1,
@@ -332,5 +360,8 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E0E0E0',
     width: '100%',
+  },
+  adicionarFotoButton: {
+    alignSelf: 'center',
   },
 });
