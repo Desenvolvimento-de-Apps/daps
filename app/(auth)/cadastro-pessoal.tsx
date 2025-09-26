@@ -21,7 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import InputMasks from '../utils/masks';
+import InputMasks from '@/utils/masks';
 
 type UserData = {
   nome: string;

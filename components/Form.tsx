@@ -1,4 +1,4 @@
-import validateFormField from '@/app/utils/validators';
+import validateFormField from '@/utils/validators';
 import { AntDesign } from '@expo/vector-icons';
 import React, {
   forwardRef,
@@ -9,9 +9,9 @@ import React, {
   useState,
 } from 'react';
 import { Text, View } from 'react-native';
-import CheckboxGroup from './CheckboxGroup';
-import InputText from './Input';
-import RadioGroup from './RadioGroup';
+import CheckboxGroup from '@/components/CheckboxGroup';
+import InputText from '@/components/Input';
+import RadioGroup from '@/components/RadioGroup';
 
 interface FormProps<T extends Record<string, string | string[] | null>> {
   children: ReactNode;
@@ -192,8 +192,7 @@ function InnerForm<T extends Record<string, string | string[] | null>>(
     }
 
     if (onSubmit && !hasErrors()) {
-      await onSubmit(formValues).finally(() => {
-      });
+      await onSubmit(formValues).finally(() => {});
     }
   }, [
     formValues,
