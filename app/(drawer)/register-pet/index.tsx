@@ -7,19 +7,17 @@ import InputText from '@/components/Input';
 import AdicionarFotoButton from '@/components/AdicionarFotoButton';
 import { Form, FormHandle } from '@/components/Form';
 import { Alert, KeyboardAvoidingView } from 'react-native';
-import { auth, db } from '@/firebaseConfig';
-import { doc, collection, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
   Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
+import { createPet } from '@/services/api';
 
 type Especie = 'Cachorro' | 'Gato';
 type Sexo = 'Macho' | 'Fêmea';
@@ -92,24 +90,18 @@ export default function RegisterPetScreen() {
   };
 
   const handleSubmit = async (values: PetData): Promise<void> => {
-    const user = auth.currentUser;
-
-    if (!user) {
-      Alert.alert('Erro', 'Você precisa estar logado para cadastrar um pet.');
-      return;
-    }
-
     try {
-      const petDocRef = doc(collection(db, 'pets'));
-
-      const petDataToSave = {
+      const petFormData = {
         ...values,
-        ownerUid: user.uid,
-        petId: petDocRef.id,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        acompanhamento:
+          values.acompanhamento == null
+            ? null
+            : Array.isArray(values.acompanhamento)
+              ? values.acompanhamento
+              : [values.acompanhamento],
       };
-      await setDoc(petDocRef, petDataToSave);
+
+      await createPet(petFormData);
 
       Alert.alert('Sucesso!', 'O cadastro do pet foi realizado com sucesso.');
       cleanForm();
@@ -118,7 +110,9 @@ export default function RegisterPetScreen() {
       console.error('Erro ao cadastrar o pet:', error);
       Alert.alert(
         'Erro',
-        'Ocorreu um erro ao cadastrar o pet. Tente novamente.',
+        error instanceof Error
+          ? error.message
+          : 'Ocorreu um erro ao cadastrar o pet. Tente novamente.',
       );
     }
   };

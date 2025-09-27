@@ -1,51 +1,64 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
-import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Text,
+  View,
+} from 'react-native';
 import { Pet } from '@/types';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import PetCard from '@/components/PetCard';
 import { DrawerActions } from '@react-navigation/native';
-
-// Dados mocados (mock data) para a lista de pets.
-const MOCK_PETS: Pet[] = [
-  {
-    id: '1',
-    name: 'Pequi',
-    image: require('@/assets/images/pets/pequi.jpg'),
-    sex: 'MACHO',
-    age: 'ADULTO',
-    size: 'MÉDIO',
-    location: 'SAMAMBAIA SUL - DISTRITO FEDERAL',
-  },
-  {
-    id: '2',
-    name: 'Bidu',
-    image: require('@/assets/images/pets/bidu.jpg'),
-    sex: 'MACHO',
-    age: 'ADULTO',
-    size: 'MÉDIO',
-    location: 'SAMAMBAIA SUL - DISTRITO FEDERAL',
-  },
-  {
-    id: '3',
-    name: 'Alec',
-    image: require('@/assets/images/pets/alec.jpg'),
-    sex: 'MACHO',
-    age: 'FILHOTE',
-    size: 'PEQUENO',
-    location: 'ÁGUAS CLARAS - DISTRITO FEDERAL',
-  },
-];
+import { getPets } from '@/services/api';
 
 export default function AdoptScreen() {
   const router = useRouter();
   const navigation = useNavigation();
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedPets = await getPets();
+        setPets(fetchedPets);
+      } catch (e) {
+        setError('Não foi possível carregar a lista de animais.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, []);
 
   const handleCardPress = (petName: string) => {
     router.push({ pathname: '/(drawer)/pets/finish', params: { petName } });
   };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#88C9BF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <CustomSafeArea style={styles.container}>
@@ -70,12 +83,15 @@ export default function AdoptScreen() {
       />
 
       <FlatList
-        data={MOCK_PETS}
+        data={pets}
         renderItem={({ item }) => (
           <PetCard pet={item} onPress={() => handleCardPress(item.name)} />
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>Nenhum animal encontrado.</Text>
+        }
       />
     </CustomSafeArea>
   );
@@ -88,5 +104,17 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: 16,
+    paddingBottom: 16,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#757575',
   },
 });

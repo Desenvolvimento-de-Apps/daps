@@ -1,11 +1,25 @@
-import { ImageProps } from 'expo-image';
+import { ImageSourcePropType } from 'react-native';
 
-export interface Pet {
+export type PetFormData = {
+  nome: string;
+  especie: string | null;
+  sexo: string | null;
+  porte: string | null;
+  idade: string | null;
+  temperamento: string[] | null;
+  saude: string[] | null;
+  doencas: string;
+  exigencias: string[] | null;
+  acompanhamento: string[] | null;
+  sobre: string;
+};
+
+export type Pet = {
   id: string;
   name: string;
-  image: ImageProps['source'];
+  image: ImageSourcePropType;
   sex: 'MACHO' | 'FÊMEA';
-  age: 'FILHOTE' | 'ADULTO';
+  age: 'FILHOTE' | 'ADULTO' | 'IDOSO';
   size: 'PEQUENO' | 'MÉDIO' | 'GRANDE';
   location: string;
-}
+};
