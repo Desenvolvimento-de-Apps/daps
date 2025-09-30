@@ -1,3 +1,5 @@
+import { auth, db, storage } from '@/firebaseConfig';
+import { Pet, PetFormData, PetDetails } from '@/types';
 import {
   collection,
   doc,
@@ -6,8 +8,8 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { db, auth } from '@/firebaseConfig';
-import { Pet, PetDetails, PetFormData } from '@/types';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { Alert } from 'react-native';
 
 /**
  * Cria um novo documento de pet no Firestore.
@@ -63,7 +65,7 @@ export const getPets = async (): Promise<Pet[]> => {
         sex: data.sexo,
         age: data.idade,
         size: data.porte,
-        image: require('@/assets/images/pets/bidu.jpg'),
+        image: data.image,
         location: data.location || 'Localização não informada',
       });
     });
@@ -75,6 +77,21 @@ export const getPets = async (): Promise<Pet[]> => {
   }
 };
 
+export const uploadImageAsync = async (uri: string, fileName: string) => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro no upload da imagem: ', error);
+    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+    return null;
+  }
+};
+
 export const getPetById = async (petId: string): Promise<PetDetails | null> => {
   try {
     const petDocRef = doc(db, 'pets', petId);
@@ -82,11 +99,11 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
 
     if (petDocSnap.exists()) {
       const data = petDocSnap.data();
-      
+
       const petDetails: PetDetails = {
         id: petDocSnap.id,
         name: data.nome,
-        image: require('@/assets/images/pets/bidu.jpg'),
+        image: data.image,
         location: data.location || 'Não informado',
         sex: data.sexo,
         age: data.idade,
@@ -99,6 +116,7 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
         about: data.sobre,
         ownerUid: data.ownerUid,
       };
+
       return petDetails;
     } else {
       console.warn(`Nenhum pet encontrado com o ID: ${petId}`);
