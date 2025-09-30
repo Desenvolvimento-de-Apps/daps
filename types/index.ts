@@ -23,3 +23,20 @@ export type Pet = {
   size: 'PEQUENO' | 'MÉDIO' | 'GRANDE';
   location: string;
 };
+
+export type PetDetails = {
+  id: string;
+  name: string;
+  image: ImageSourcePropType;
+  location: string;
+  sex: 'MACHO' | 'FÊMEA' | null;
+  age: 'FILHOTE' | 'ADULTO' | 'IDOSO' | null;
+  size: 'PEQUENO' | 'MÉDIO' | 'GRANDE' | null;
+  species: string | null;
+  temperament: string[] | null;
+  health: string[] | null;
+  diseases: string;
+  requirements: string[] | null;
+  about: string;
+  ownerUid: string;
+};

@@ -1,5 +1,5 @@
 import { auth, db, storage } from '@/firebaseConfig';
-import { Pet, PetFormData } from '@/types';
+import { Pet, PetFormData, PetDetails } from '@/types';
 import {
   collection,
   doc,
@@ -89,5 +89,40 @@ export const uploadImageAsync = async (uri: string, fileName: string) => {
     console.error('Erro no upload da imagem: ', error);
     Alert.alert('Erro', 'Não foi possível enviar a imagem.');
     return null;
+  }
+};
+
+export const getPetById = async (petId: string): Promise<PetDetails | null> => {
+  try {
+    const petDocRef = doc(db, 'pets', petId);
+    const petDocSnap = await getDoc(petDocRef);
+
+    if (petDocSnap.exists()) {
+      const data = petDocSnap.data();
+
+      const petDetails: PetDetails = {
+        id: petDocSnap.id,
+        name: data.nome,
+        image: require('@/assets/images/pets/bidu.jpg'),
+        location: data.location || 'Não informado',
+        sex: data.sexo,
+        age: data.idade,
+        size: data.porte,
+        species: data.especie,
+        temperament: data.temperamento,
+        health: data.saude,
+        diseases: data.doencas,
+        requirements: data.exigencias,
+        about: data.sobre,
+        ownerUid: data.ownerUid,
+      };
+      return petDetails;
+    } else {
+      console.warn(`Nenhum pet encontrado com o ID: ${petId}`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar pet por ID:', error);
+    throw new Error('Não foi possível buscar os dados do pet.');
   }
 };
