@@ -103,7 +103,7 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
       const petDetails: PetDetails = {
         id: petDocSnap.id,
         name: data.nome,
-        image: require('@/assets/images/pets/bidu.jpg'),
+        image: data.image,
         location: data.location || 'Não informado',
         sex: data.sexo,
         age: data.idade,
@@ -116,6 +116,7 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
         about: data.sobre,
         ownerUid: data.ownerUid,
       };
+
       return petDetails;
     } else {
       console.warn(`Nenhum pet encontrado com o ID: ${petId}`);

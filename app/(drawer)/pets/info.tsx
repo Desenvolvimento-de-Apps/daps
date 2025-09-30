@@ -16,16 +16,6 @@ import { getPetById } from '@/services/api';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 
-// const InfoTile = ({ title, content }: { title: string; content: string }) => {
-//   if (!content) return null;
-//   return (
-//     <View style={styles.section}>
-//       <Text style={styles.sectionTitle}>{title}</Text>
-//       <Text style={styles.sectionContent}>{content}</Text>
-//     </View>
-//   );
-// };
-
 const formatArrayAsCommaSeparatedString = (arr: string[] | null) => {
   if (!arr || arr.length === 0) return null;
   return arr.join(', ');
@@ -36,42 +26,45 @@ export default function PetInfoScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
 
   const [pet, setPet] = useState<PetDetails | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
+
+  const [isApiFinished, setIsApiFinished] = useState(false);
+  const [isImageRendered, setIsImageRendered] = useState(false);
 
   useEffect(() => {
     if (!petId) {
       setError('ID do pet não fornecido.');
-      setLoading(false);
+      setIsApiFinished(true);
+      setIsImageRendered(true);
       return;
     }
 
     const fetchPetDetails = async () => {
       try {
-        setLoading(true);
-        setError(null);
         const petData = await getPetById(petId);
         setPet(petData);
+        if (!petData || !petData.image) {
+          setIsImageRendered(true);
+        }
       } catch (e) {
         setError('Não foi possível carregar os dados do pet.');
+        setIsImageRendered(true);
       } finally {
-        setLoading(false);
+        setIsApiFinished(true);
       }
     };
 
     fetchPetDetails();
   }, [petId]);
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#88C9BF" />
-      </View>
-    );
-  }
+  const handleFavoriteToggle = () => {
+    setIsFavorited((previousState) => !previousState);
+  };
 
-  if (error || !pet) {
+  const isScreenReady = isApiFinished && isImageRendered;
+
+  if (isApiFinished && (error || !pet)) {
     return (
       <CustomSafeArea style={styles.centered}>
         <TouchableOpacity
@@ -85,153 +78,178 @@ export default function PetInfoScreen() {
     );
   }
 
-  const handleFavoriteToggle = () => {
-    setIsFavorited((previousState) => !previousState);
-    // TODO: Adicionar lógica para salvar o favorito no banco de dados
-  };
-
   return (
-    <CustomSafeArea style={styles.container}>
-      <Header
-        title={pet.name}
-        leftAction={
-          <TouchableOpacity
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Feather name="arrow-left" size={24} color="#434343" />
-          </TouchableOpacity>
-        }
-        rightAction={null}
-      />
-      <ScrollView>
-        <View style={styles.imageContainer}>
-          <Image source={pet.image} style={styles.petImage} />
-          <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={handleFavoriteToggle}
-          >
-            <Feather
-              name={isFavorited ? 'heart' : 'heart'}
-              size={24}
-              color={isFavorited ? '#E91E63' : '#434343'}
-            />
-          </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      {!isScreenReady && (
+        <View style={styles.overlayLoader}>
+          <ActivityIndicator size="large" color="#88C9BF" />
         </View>
+      )}
 
-        <View style={styles.contentContainer}>
-          <Text style={styles.petName}>{pet.name}</Text>
-          {/* <View style={styles.locationContainer}>
-            <Feather name="map-pin" size={16} color="#757575" />
-            <Text style={styles.locationText}>{pet.location}</Text>
-          </View> */}
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>SEXO</Text>
-              <Text style={styles.sectionContent}>
-                {pet.sex || 'Não informado'}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.sectionTitle}>PORTE</Text>
-              <Text style={styles.sectionContent}>
-                {pet.size || 'Não informado'}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.sectionTitle}>IDADE</Text>
-              <Text style={styles.sectionContent}>
-                {pet.age || 'Não informado'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>LOCALIZAÇÃO</Text>
-              <Text style={styles.sectionContent}>
-                {pet.location || 'Não informado'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>CASTRADO</Text>
-              <Text style={styles.sectionContent}>
-                {pet.health?.includes('Castrado') ? 'Sim' : 'Não'}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.sectionTitle}>VERMIFUGADO</Text>
-              <Text style={styles.sectionContent}>
-                {pet.health?.includes('Vermifugado') ? 'Sim' : 'Não'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>VACINADO</Text>
-              <Text style={styles.sectionContent}>
-                {pet.health?.includes('Vacinado') ? 'Sim' : 'Não'}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.sectionTitle}>DOENÇAS</Text>
-              <Text style={styles.sectionContent}>
-                {pet.diseases || 'Nenhuma'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>TEMPERAMENTO</Text>
-              <Text style={styles.sectionContent}>
-                {formatArrayAsCommaSeparatedString(pet.temperament) ||
-                  'Não informado'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>EXIGÊNCIAS DO DOADOR</Text>
-              <Text style={styles.sectionContent}>
-                {formatArrayAsCommaSeparatedString(pet.requirements) ||
-                  'Não informado'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rowContainer}>
-            <View>
-              <Text style={styles.sectionTitle}>
-                MAIS SOBRE {pet.name.toUpperCase()}
-              </Text>
-              <Text style={styles.sectionContent}>
-                {pet.about || 'Nenhuma'}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.adoptButton}
-          onPress={() => alert('Implementar chat!')}
+      {isApiFinished && pet && (
+        <CustomSafeArea
+          style={[styles.container, { opacity: isScreenReady ? 1 : 0 }]}
         >
-          <Text style={styles.adoptButtonText}>PRETENDO ADOTAR</Text>
-        </TouchableOpacity>
-      </View>
-    </CustomSafeArea>
+          <Header
+            title={pet.name}
+            leftAction={
+              <TouchableOpacity onPress={() => router.back()}>
+                <Feather name="arrow-left" size={24} color="#434343" />
+              </TouchableOpacity>
+            }
+            rightAction={null}
+          />
+          <ScrollView>
+            <View style={styles.imageContainer}>
+              {pet.image ? (
+                <>
+                  {typeof pet.image === 'string' ? (
+                    <Image
+                      source={{ uri: pet.image }}
+                      style={styles.petImage}
+                      onLoad={() => setIsImageRendered(true)}
+                    />
+                  ) : (
+                    <Image
+                      source={pet.image}
+                      style={styles.petImage}
+                      onLoad={() => setIsImageRendered(true)}
+                    />
+                  )}
+                </>
+              ) : (
+                <View style={[styles.petImage, styles.placeholderImage]}>
+                  <Ionicons name="paw" size={80} color="#cccccc" />
+                </View>
+              )}
+
+              {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
+              <TouchableOpacity
+                style={styles.favoriteButton}
+                onPress={handleFavoriteToggle}
+              >
+                <Feather
+                  name={isFavorited ? 'heart' : 'heart'}
+                  size={24}
+                  color={isFavorited ? '#E91E63' : '#434343'}
+                  fill={isFavorited ? '#E91E63' : 'none'}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
+            <View style={styles.contentContainer}>
+              <Text style={styles.petName}>{pet.name}</Text>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>SEXO</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.sex || 'Não informado'}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>PORTE</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.size || 'Não informado'}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>IDADE</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.age || 'Não informado'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>LOCALIZAÇÃO</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.location || 'Não informado'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>CASTRADO</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.health?.includes('Castrado') ? 'Sim' : 'Não'}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>VERMIFUGADO</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.health?.includes('Vermifugado') ? 'Sim' : 'Não'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>VACINADO</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.health?.includes('Vacinado') ? 'Sim' : 'Não'}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>DOENÇAS</Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.diseases || 'Nenhuma'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>TEMPERAMENTO</Text>
+                  <Text style={styles.sectionContent}>
+                    {formatArrayAsCommaSeparatedString(pet.temperament) ||
+                      'Não informado'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>EXIGÊNCIAS DO DOADOR</Text>
+                  <Text style={styles.sectionContent}>
+                    {formatArrayAsCommaSeparatedString(pet.requirements) ||
+                      'Não informado'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View>
+                  <Text style={styles.sectionTitle}>
+                    MAIS SOBRE {pet.name.toUpperCase()}
+                  </Text>
+                  <Text style={styles.sectionContent}>
+                    {pet.about || 'Nenhuma'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.adoptButton}
+              onPress={() => alert('Implementar chat!')}
+            >
+              <Text style={styles.adoptButtonText}>PRETENDO ADOTAR</Text>
+            </TouchableOpacity>
+          </View>
+        </CustomSafeArea>
+      )}
+    </View>
   );
 }
 
+// Estilos (permanecem os mesmos)
 const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
@@ -243,14 +261,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    padding: 20,
+  },
+  overlayLoader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    zIndex: 10,
   },
   petImage: {
     width: '100%',
     height: width * 0.9,
+    resizeMode: 'cover',
+    backgroundColor: '#e0e0e0',
+  },
+  placeholderImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageContainer: {
     position: 'relative',
+    minHeight: width * 0.9,
+    backgroundColor: '#e0e0e0',
   },
   backButtonHeader: {
     position: 'absolute',
@@ -275,39 +308,29 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingTop: 40,
   },
   petName: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#434343',
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
     marginBottom: 16,
-  },
-  locationText: {
-    fontSize: 16,
-    color: '#757575',
-    marginLeft: 8,
-  },
-  pillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 24,
   },
   rowContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 16,
   },
   sectionTitle: {
     fontSize: 12,
     color: '#f7a800',
+    fontWeight: 'bold',
     marginBottom: 8,
+    textTransform: 'uppercase',
   },
   sectionContent: {
     fontSize: 14,
@@ -327,8 +350,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   adoptButtonText: {
-    color: '##434343',
-    fontSize: 12,
+    color: '#434343',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

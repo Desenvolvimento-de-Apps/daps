@@ -10,10 +10,7 @@ import { createPet, uploadImageAsync } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useRef, useState } from 'react';
-
-import { storage } from '@/firebaseConfig';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -60,7 +57,7 @@ export default function RegisterPetScreen() {
 
   const [petImage, setPetImage] = useState<string | null>(null);
   const handleImagePicked = (uri: string) => {
-    console.log("Image picked:", uri);
+    console.log('Image picked:', uri);
     setPetImage(uri);
   };
 
@@ -104,7 +101,9 @@ export default function RegisterPetScreen() {
   const handleSubmit = async (values: PetData): Promise<void> => {
     try {
       const fileName = `images/pets/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
-      const imageUrl = petImage ? await uploadImageAsync(petImage, fileName) : null;
+      const imageUrl = petImage
+        ? await uploadImageAsync(petImage, fileName)
+        : null;
       if (petImage && !imageUrl) {
         return;
       }
