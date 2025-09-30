@@ -31,6 +31,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
@@ -46,7 +47,12 @@
           "fonts": ["./assets/fonts/Courgette-Regular.ttf"]
         }
       ],
-      "expo-web-browser"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

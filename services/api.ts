@@ -63,7 +63,7 @@ export const getPets = async (): Promise<Pet[]> => {
         sex: data.sexo,
         age: data.idade,
         size: data.porte,
-        image: require('@/assets/images/pets/bidu.jpg'),
+        image: data.image,
         location: data.location || 'Localização não informada',
       });
     });

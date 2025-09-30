@@ -9,6 +9,9 @@ interface PetCardProps {
 }
 
 const PetCard = ({ pet, onPress }: PetCardProps) => {
+  if (pet.id === "nvEOmukjbb5dgCvL1DCw") {
+    console.log("Special Pet Found:", pet);
+  }
   return (
     <TouchableOpacity onPress={onPress}>
       <View style={styles.card}>

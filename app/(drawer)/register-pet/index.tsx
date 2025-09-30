@@ -1,23 +1,29 @@
-import CustomSafeArea from '@/components/CustomSafeArea';
-import Header from '@/components/Header';
 import Button from '@/components/Button';
 import CheckboxGroup from '@/components/CheckboxGroup';
-import RadioGroup from '@/components/RadioGroup';
-import InputText from '@/components/Input';
-import AdicionarFotoButton from '@/components/AdicionarFotoButton';
+import CustomSafeArea from '@/components/CustomSafeArea';
 import { Form, FormHandle } from '@/components/Form';
-import { Alert, KeyboardAvoidingView } from 'react-native';
+import Header from '@/components/Header';
+import CustomImagePicker from '@/components/ImagePicker';
+import InputText from '@/components/Input';
+import RadioGroup from '@/components/RadioGroup';
+import { createPet } from '@/services/api';
+import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { storage } from '@/firebaseConfig';
 import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  Platform,
+  View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
-import { createPet } from '@/services/api';
 
 type Especie = 'Cachorro' | 'Gato';
 type Sexo = 'Macho' | 'Fêmea';
@@ -51,6 +57,31 @@ export default function RegisterPetScreen() {
   const [saude, setSaude] = useState<string[]>([]);
   const [exigencias, setExigencias] = useState<string[]>([]);
   const [acompanhamento, setAcompanhamento] = useState<string[]>([]);
+
+  const [petImage, setPetImage] = useState<string | null>(null);
+  const handleImagePicked = (uri: string) => {
+    console.log("Image picked:", uri);
+    setPetImage(uri);
+  };
+
+  const uploadImageAsync = async (uri: string) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      console.log("BLOB:", blob);
+      const fileName = `images/pets/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
+      console.log("fileName:", fileName);
+      const storageRef = ref(storage, fileName);
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log("Image uploaded, download URL:", downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('Erro no upload da imagem: ', error);
+      Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+      return null;
+    }
+  };
 
   const [isAcompanhamentoSelected, setIsAcompanhamentoSelected] =
     useState(false);
@@ -91,8 +122,14 @@ export default function RegisterPetScreen() {
 
   const handleSubmit = async (values: PetData): Promise<void> => {
     try {
+      const imageUrl = petImage ? await uploadImageAsync(petImage) : null;
+      if (petImage && !imageUrl) {
+        return;
+      }
+
       const petFormData = {
         ...values,
+        image: imageUrl,
         acompanhamento:
           values.acompanhamento == null
             ? null
@@ -153,10 +190,16 @@ export default function RegisterPetScreen() {
             />
 
             <Text style={styles.formText}>FOTOS DO ANIMAL</Text>
-            <AdicionarFotoButton
-              style={styles.adicionarFotoButton}
-              onPress={() => {}}
-            />
+
+            <CustomImagePicker onImagePicked={handleImagePicked}>
+              {petImage ? (
+                <Image source={{ uri: petImage }} style={styles.imagePreview} />
+              ) : (
+                <View style={styles.placeholderContainer}>
+                  <Text style={styles.placeholderText}>+ Adicionar Foto</Text>
+                </View>
+              )}
+            </CustomImagePicker>
 
             <Text style={styles.formText}>ESPÉCIE</Text>
             <RadioGroup
@@ -264,7 +307,9 @@ export default function RegisterPetScreen() {
 
             <Button
               title="COMPARTILHAR HISTÓRIA"
-              onPress={() => formRef.current?.submit()}
+              onPress={() => {
+                formRef.current?.submit();
+              }}
               backgroundColor="#ffd358"
               textColor="#434343"
               style={styles.button}
@@ -357,5 +402,25 @@ const styles = StyleSheet.create({
   },
   adicionarFotoButton: {
     alignSelf: 'center',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 185,
+    marginBottom: 20,
+    backgroundColor: '#e0e0e0',
+  },
+  placeholderContainer: {
+    width: '100%',
+    height: 185,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    borderStyle: 'dashed',
+  },
+  placeholderText: {
+    color: '#888',
   },
 });
