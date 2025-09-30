@@ -40,8 +40,8 @@ export default function AdoptScreen() {
     fetchPets();
   }, []);
 
-  const handleCardPress = (petName: string) => {
-    router.push({ pathname: '/(drawer)/pets/finish', params: { petName } });
+  const handleCardPress = (petId: string) => {
+    router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
   };
 
   if (loading) {
@@ -85,7 +85,7 @@ export default function AdoptScreen() {
       <FlatList
         data={pets}
         renderItem={({ item }) => (
-          <PetCard pet={item} onPress={() => handleCardPress(item.name)} />
+          <PetCard pet={item} onPress={() => handleCardPress(item.id)} />
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
