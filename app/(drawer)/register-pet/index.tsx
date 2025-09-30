@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import CustomImagePicker from '@/components/ImagePicker';
 import InputText from '@/components/Input';
 import RadioGroup from '@/components/RadioGroup';
-import { createPet } from '@/services/api';
+import { createPet, uploadImageAsync } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -64,25 +64,6 @@ export default function RegisterPetScreen() {
     setPetImage(uri);
   };
 
-  const uploadImageAsync = async (uri: string) => {
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      console.log("BLOB:", blob);
-      const fileName = `images/pets/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
-      console.log("fileName:", fileName);
-      const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log("Image uploaded, download URL:", downloadURL);
-      return downloadURL;
-    } catch (error) {
-      console.error('Erro no upload da imagem: ', error);
-      Alert.alert('Erro', 'Não foi possível enviar a imagem.');
-      return null;
-    }
-  };
-
   const [isAcompanhamentoSelected, setIsAcompanhamentoSelected] =
     useState(false);
 
@@ -122,7 +103,8 @@ export default function RegisterPetScreen() {
 
   const handleSubmit = async (values: PetData): Promise<void> => {
     try {
-      const imageUrl = petImage ? await uploadImageAsync(petImage) : null;
+      const fileName = `images/pets/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
+      const imageUrl = petImage ? await uploadImageAsync(petImage, fileName) : null;
       if (petImage && !imageUrl) {
         return;
       }

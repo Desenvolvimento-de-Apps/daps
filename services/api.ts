@@ -1,3 +1,5 @@
+import { auth, db, storage } from '@/firebaseConfig';
+import { Pet, PetFormData } from '@/types';
 import {
   collection,
   doc,
@@ -6,8 +8,8 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { db, auth } from '@/firebaseConfig';
-import { Pet, PetFormData } from '@/types';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { Alert } from 'react-native';
 
 /**
  * Cria um novo documento de pet no Firestore.
@@ -72,5 +74,20 @@ export const getPets = async (): Promise<Pet[]> => {
   } catch (error) {
     console.error('Erro ao buscar pets:', error);
     throw new Error('Não foi possível buscar os pets.');
+  }
+};
+
+export const uploadImageAsync = async (uri: string, fileName: string) => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro no upload da imagem: ', error);
+    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+    return null;
   }
 };

@@ -1,16 +1,19 @@
-import AdicionarFotoButton from '@/components/AdicionarFotoButton';
 import Button from '@/components/Button';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import { Form, FormHandle } from '@/components/Form';
 import Header from '@/components/Header';
+import CustomImagePicker from '@/components/ImagePicker';
 import InputText from '@/components/Input';
 import { auth, db } from '@/firebaseConfig';
+import { uploadImageAsync } from '@/services/api';
+import InputMasks from '@/utils/masks';
 import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -21,7 +24,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import InputMasks from '@/utils/masks';
 
 type UserData = {
   nome: string;
@@ -38,8 +40,14 @@ type UserData = {
 
 export default function CadastroPessoal() {
   const formRef = useRef<FormHandle<UserData>>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
+
+  const handleImagePicked = (uri: string) => {
+    setUserImage(uri);
+  };
 
   const handleSubmit = async (values: UserData): Promise<void> => {
+    console.log("Submitting form with values:", values);
     let userCredential: UserCredential | null = null;
 
     try {
@@ -62,10 +70,27 @@ export default function CadastroPessoal() {
       const userRef = doc(db, 'users', uid);
       await setDoc(userRef, {
         ...userData,
-        uid,
+        image: uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      const fileName = `images/users/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
+      const imageUrl = userImage
+        ? await uploadImageAsync(userImage, fileName)
+        : null;
+
+      if (userImage && !imageUrl) {
+        return;
+      }
+
+      if (imageUrl) {
+        await setDoc(
+          userRef,
+          { image: imageUrl, updatedAt: serverTimestamp() },
+          { merge: true },
+        );
+      }
 
       Alert.alert(
         'Cadastro Bem-Sucedido',
@@ -73,6 +98,7 @@ export default function CadastroPessoal() {
       );
       router.replace('/(drawer)');
     } catch (error) {
+      console.log("Error during user registration:", error);
       if (error instanceof FirebaseError && formRef.current) {
         const { setFieldError } = formRef.current;
 
@@ -213,10 +239,18 @@ export default function CadastroPessoal() {
 
             <View style={styles.section}>
               <Text style={styles.sectionText}>FOTO DE PERFIL</Text>
-              <AdicionarFotoButton
-                style={styles.adicionarFotoButton}
-                onPress={() => {}}
-              />
+              <CustomImagePicker onImagePicked={handleImagePicked}>
+                {userImage ? (
+                  <Image
+                    source={{ uri: userImage }}
+                    style={styles.imagePreview}
+                  />
+                ) : (
+                  <View style={styles.placeholderContainer}>
+                    <Text style={styles.placeholderText}>+ Adicionar Foto</Text>
+                  </View>
+                )}
+              </CustomImagePicker>
             </View>
 
             <Button
@@ -257,6 +291,7 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: 16,
+    alignItems: 'center',
   },
   sectionText: {
     color: '#599B9B',
@@ -269,5 +304,27 @@ const styles = StyleSheet.create({
   },
   adicionarFotoButton: {
     alignSelf: 'center',
+  },
+  imagePreview: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    marginBottom: 20,
+    backgroundColor: '#e0e0e0',
+  },
+  placeholderContainer: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    borderStyle: 'dashed',
+  },
+  placeholderText: {
+    color: '#888',
   },
 });
