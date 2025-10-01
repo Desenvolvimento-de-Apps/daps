@@ -1,7 +1,10 @@
 import { auth, db, storage } from '@/firebaseConfig';
-import { Pet, PetFormData, PetDetails } from '@/types';
+import { Pet, PetFormData, PetDetails, UserData } from '@/types';
+import { FirebaseError } from 'firebase/app';
+import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -10,6 +13,98 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
+
+/**
+ * Registra um novo usuário no Firebase Auth e Firestore.
+ * @param values Os dados do formulário do usuário.
+ * @param userImage A URI da imagem de perfil selecionada (opcional).
+ */
+
+export const registerUser = async (
+  values: UserData,
+  userImage: string | null,
+): Promise<void> => {
+  let userCredential: UserCredential | null = null;
+  const { email, senha, ...userData } = values;
+
+  try {
+    // 1. Criar usuário no Firebase Authentication
+    userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+    const uid = userCredential.user.uid;
+
+    // 2. Verificar se o nome de usuário já existe
+    const usernameRef = doc(db, 'usernames', userData.nomeUsuario);
+    const usernameDoc = await getDoc(usernameRef);
+
+    if (usernameDoc.exists()) {
+      throw new FirebaseError(
+        'auth/username-already-in-use',
+        'Este nome de usuário já está em uso.',
+      );
+    }
+
+    // 3. Salvar o mapeamento nome de usuário -> UID
+    await setDoc(usernameRef, { uid });
+
+    // 4. Salvar os dados do usuário no Firestore
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, {
+      ...userData,
+      image: null, // Inicia como nulo, será atualizado após o upload
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // 5. Fazer upload da imagem de perfil, se houver
+    if (userImage) {
+      const fileName = `images/users/${uid}-${new Date().getTime()}.jpg`;
+      const imageUrl = await uploadImageAsync(userImage, fileName);
+      if (imageUrl) {
+        await setDoc(
+          userRef,
+          { image: imageUrl, updatedAt: serverTimestamp() },
+          { merge: true },
+        );
+      }
+    }
+  } catch (error) {
+    // Se qualquer passo falhar após a criação do usuário no Auth,
+    // o usuário recém-criado é deletado para evitar contas órfãs.
+    if (userCredential) {
+      try {
+        await userCredential.user.delete();
+      } catch (e) {
+        console.warn(
+          'Falha ao remover usuário órfão após erro no cadastro:',
+          e,
+        );
+      }
+    }
+    // Lança o erro original para ser tratado pelo componente
+    throw error;
+  }
+};
+
+/**
+ * Faz upload de uma imagem para o Firebase Storage.
+ * @param uri A URI local da imagem.
+ * @param fileName O nome do arquivo no Storage.
+ * @returns A URL de download da imagem ou null em caso de erro.
+ */
+export const uploadImageAsync = async (uri: string, fileName: string) => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro no upload da imagem: ', error);
+    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+    return null;
+  }
+};
 
 /**
  * Cria um novo documento de pet no Firestore.
@@ -77,21 +172,6 @@ export const getPets = async (): Promise<Pet[]> => {
   }
 };
 
-export const uploadImageAsync = async (uri: string, fileName: string) => {
-  try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const storageRef = ref(storage, fileName);
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-  } catch (error) {
-    console.error('Erro no upload da imagem: ', error);
-    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
-    return null;
-  }
-};
-
 export const getPetById = async (petId: string): Promise<PetDetails | null> => {
   try {
     const petDocRef = doc(db, 'pets', petId);
@@ -125,5 +205,97 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
   } catch (error) {
     console.error('Erro ao buscar pet por ID:', error);
     throw new Error('Não foi possível buscar os dados do pet.');
+  }
+};
+
+/**
+ * Busca todos os pets favoritados por um usuário.
+ * @param userId O UID do usuário.
+ * @returns Uma lista com os detalhes completos dos pets favoritados.
+ */
+export const getFavoritePets = async (
+  userId: string,
+): Promise<PetDetails[]> => {
+  try {
+    const favoritesCollectionRef = collection(db, 'users', userId, 'favorites');
+    const querySnapshot = await getDocs(favoritesCollectionRef);
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    // Mapeia cada documento de favorito para uma promise que busca os detalhes do pet
+    const petPromises = querySnapshot.docs.map((doc) => {
+      const petId = doc.data().petId;
+      return getPetById(petId);
+    });
+
+    // Aguarda todas as buscas de pets terminarem
+    const pets = await Promise.all(petPromises);
+
+    // Filtra resultados nulos (caso um pet tenha sido deletado mas ainda esteja nos favoritos)
+    return pets.filter((pet): pet is PetDetails => pet !== null);
+  } catch (error) {
+    console.error('Erro ao buscar pets favoritos:', error);
+    throw new Error('Não foi possível buscar os pets favoritos.');
+  }
+};
+
+/**
+ * Verifica se um pet está na lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ * @returns `true` se o pet for favorito, `false` caso contrário.
+ */
+export const isPetFavorited = async (
+  userId: string,
+  petId: string,
+): Promise<boolean> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    const docSnap = await getDoc(favoriteRef);
+    return docSnap.exists();
+  } catch (error) {
+    console.error('Erro ao verificar favorito:', error);
+    return false; // Retorna false em caso de erro para não bloquear a UI
+  }
+};
+
+/**
+ * Adiciona um pet à lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ */
+export const addFavoritePet = async (
+  userId: string,
+  petId: string,
+): Promise<void> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    await setDoc(favoriteRef, {
+      petId: petId,
+      addedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao adicionar favorito:', error);
+    throw new Error('Não foi possível adicionar o pet aos favoritos.');
+  }
+};
+
+/**
+ * Remove um pet da lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ */
+export const removeFavoritePet = async (
+  userId: string,
+  petId: string,
+): Promise<void> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    await deleteDoc(favoriteRef);
+  } catch (error) {
+    console.error('Erro ao remover favorito:', error);
+    throw new Error('Não foi possível remover o pet dos favoritos.');
   }
 };

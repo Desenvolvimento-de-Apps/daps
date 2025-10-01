@@ -60,6 +60,13 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
+        name="favorites"
+        options={{
+          drawerLabel: 'Favoritos',
+          title: 'Favoritos',
+        }}
+      />
+      <Drawer.Screen
         name="settings"
         options={{
           drawerLabel: 'Configurações',
