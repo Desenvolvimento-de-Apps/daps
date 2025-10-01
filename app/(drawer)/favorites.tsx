@@ -4,18 +4,20 @@ import {
   View,
   Text,
   FlatList,
-  ImageBackground,
+  Image,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   SafeAreaView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { auth } from '@/firebaseConfig';
 import { getFavoritePets, removeFavoritePet } from '@/services/api';
 import { PetDetails } from '@/types';
+
+const HIGHLIGHT_COLOR = '#88C9BF';
 
 const PetTag = ({ label }: { label: string | null }) => {
   if (!label) return null;
@@ -34,34 +36,38 @@ const PetCard = ({
   item: PetDetails;
   onUnfavorite: (petId: string) => void;
   onPress: () => void;
-}) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-    <View style={styles.card}>
-      <ImageBackground
-        source={
-          typeof item.image === 'string' ? { uri: item.image } : item.image
-        }
-        style={styles.imageBackground}
-        imageStyle={styles.image}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.petName}>{item.name}</Text>
-          {/* O stopPropagation evita que o clique no coração acione o clique do card */}
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              onUnfavorite(item.id);
-            }}
-          >
-            <Feather
-              name="heart"
-              size={24}
-              color="#FF6347"
-              style={styles.heartIconFilled}
-            />
-          </TouchableOpacity>
-        </View>
-      </ImageBackground>
+}) => {
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9} style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.petName}>{item.name}</Text>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            onUnfavorite(item.id);
+          }}
+        >
+          <Ionicons name="heart" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.imageContainer}>
+        <Image
+          source={
+            typeof item.image === 'string' ? { uri: item.image } : item.image
+          }
+          style={styles.petImage}
+          onLoadEnd={() => setIsImageLoading(false)} // Esconde o loader quando a imagem termina de carregar
+        />
+        {isImageLoading && (
+          <View style={styles.imagePlaceholder}>
+            <ActivityIndicator color={HIGHLIGHT_COLOR} />
+          </View>
+        )}
+      </View>
+
       <View style={styles.cardFooter}>
         <View style={styles.tagsRow}>
           <PetTag label={item.sex} />
@@ -69,14 +75,15 @@ const PetCard = ({
           <PetTag label={item.size} />
         </View>
         <View style={styles.locationRow}>
-          <Feather name="map-pin" size={16} color="#666" />
+          <Feather name="map-pin" size={16} color="#757575" />
           <Text style={styles.locationText}>{item.location.toUpperCase()}</Text>
         </View>
       </View>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
+// Componente principal da tela de Favoritos
 const FavoritesScreen = () => {
   const [favoritePets, setFavoritePets] = useState<PetDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,14 +137,13 @@ const FavoritesScreen = () => {
   };
 
   const handlePetPress = (petId: string) => {
-    console.log('Navegando para detalhes do pet:', petId);
     router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
   };
 
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4a90e2" />
+        <ActivityIndicator size="large" color={HIGHLIGHT_COLOR} />
         <Text style={styles.infoText}>Carregando favoritos...</Text>
       </View>
     );
@@ -158,10 +164,10 @@ const FavoritesScreen = () => {
   if (favoritePets.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Feather name="heart" size={48} color="#ccc" />
+        <Feather name="heart" size={48} color="#E0E0E0" />
         <Text style={styles.emptyText}>Você ainda não tem pets favoritos.</Text>
         <Text style={styles.emptySubText}>
-          Que tal explorar e encontrar um novo amigo?
+          Encontre um novo amigo para chamar de seu!
         </Text>
       </View>
     );
@@ -190,68 +196,69 @@ const FavoritesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
   },
   listContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 10,
+    color: '#434343',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  imageBackground: {
-    width: '100%',
-    height: 280,
-    justifyContent: 'flex-start',
-  },
-  image: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+    overflow: 'hidden', // Importante para as bordas da imagem
   },
   cardHeader: {
+    backgroundColor: HIGHLIGHT_COLOR,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   petName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  heartIconFilled: {
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  imageContainer: {
+    height: 250,
+    backgroundColor: '#F0F0F0',
+  },
+  petImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardFooter: {
     padding: 16,
@@ -263,8 +270,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tagContainer: {
-    backgroundColor: '#ecf0f1',
-    borderRadius: 14,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginRight: 8,
@@ -273,7 +280,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#34495e',
+    color: '#434343',
   },
   locationRow: {
     flexDirection: 'row',
@@ -282,13 +289,14 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 13,
-    color: '#7f8c8d',
+    color: '#757575',
     marginLeft: 8,
     fontWeight: '600',
   },
   infoText: {
-    marginTop: 10,
+    marginTop: 16,
     color: '#555',
+    fontSize: 16,
   },
   errorText: {
     fontSize: 16,
@@ -299,20 +307,20 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#7f8c8d',
+    color: '#757575',
     fontWeight: '600',
     marginTop: 16,
     textAlign: 'center',
   },
   emptySubText: {
     fontSize: 14,
-    color: '#95a5a6',
+    color: '#A0A0A0',
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 20,
   },
   retryButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: HIGHLIGHT_COLOR,
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 25,
