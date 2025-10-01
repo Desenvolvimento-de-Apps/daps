@@ -4,6 +4,7 @@ import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -204,5 +205,64 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
   } catch (error) {
     console.error('Erro ao buscar pet por ID:', error);
     throw new Error('Não foi possível buscar os dados do pet.');
+  }
+};
+
+/**
+ * Verifica se um pet está na lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ * @returns `true` se o pet for favorito, `false` caso contrário.
+ */
+export const isPetFavorited = async (
+  userId: string,
+  petId: string,
+): Promise<boolean> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    const docSnap = await getDoc(favoriteRef);
+    return docSnap.exists();
+  } catch (error) {
+    console.error('Erro ao verificar favorito:', error);
+    return false; // Retorna false em caso de erro para não bloquear a UI
+  }
+};
+
+/**
+ * Adiciona um pet à lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ */
+export const addFavoritePet = async (
+  userId: string,
+  petId: string,
+): Promise<void> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    await setDoc(favoriteRef, {
+      petId: petId,
+      addedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao adicionar favorito:', error);
+    throw new Error('Não foi possível adicionar o pet aos favoritos.');
+  }
+};
+
+/**
+ * Remove um pet da lista de favoritos de um usuário.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ */
+export const removeFavoritePet = async (
+  userId: string,
+  petId: string,
+): Promise<void> => {
+  try {
+    const favoriteRef = doc(db, 'users', userId, 'favorites', petId);
+    await deleteDoc(favoriteRef);
+  } catch (error) {
+    console.error('Erro ao remover favorito:', error);
+    throw new Error('Não foi possível remover o pet dos favoritos.');
   }
 };

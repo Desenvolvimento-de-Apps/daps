@@ -8,13 +8,20 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { PetDetails } from '@/types';
-import { getPetById } from '@/services/api';
+import {
+  getPetById,
+  isPetFavorited,
+  addFavoritePet,
+  removeFavoritePet,
+} from '@/services/api';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
+import { auth } from '@/firebaseConfig';
 
 const formatArrayAsCommaSeparatedString = (arr: string[] | null) => {
   if (!arr || arr.length === 0) return null;
@@ -28,6 +35,7 @@ export default function PetInfoScreen() {
   const [pet, setPet] = useState<PetDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [isCheckingFavorite, setIsCheckingFavorite] = useState(true);
 
   const [isApiFinished, setIsApiFinished] = useState(false);
   const [isImageRendered, setIsImageRendered] = useState(false);
@@ -37,32 +45,67 @@ export default function PetInfoScreen() {
       setError('ID do pet não fornecido.');
       setIsApiFinished(true);
       setIsImageRendered(true);
+      setIsCheckingFavorite(false);
       return;
     }
 
     const fetchPetDetails = async () => {
       try {
+        // Busca os dados do pet
         const petData = await getPetById(petId);
         setPet(petData);
         if (!petData || !petData.image) {
           setIsImageRendered(true);
+        }
+
+        // Verifica o status de favorito
+        const user = auth.currentUser;
+        if (user) {
+          const favoritedStatus = await isPetFavorited(user.uid, petId);
+          setIsFavorited(favoritedStatus);
         }
       } catch (e) {
         setError('Não foi possível carregar os dados do pet.');
         setIsImageRendered(true);
       } finally {
         setIsApiFinished(true);
+        setIsCheckingFavorite(false);
       }
     };
 
     fetchPetDetails();
   }, [petId]);
 
-  const handleFavoriteToggle = () => {
-    setIsFavorited((previousState) => !previousState);
+  const handleFavoriteToggle = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert(
+        'Login Necessário',
+        'Você precisa estar logado para favoritar um pet.',
+      );
+      return;
+    }
+
+    if (!petId) return;
+
+    // Inverte o estado atual para a chamada da API
+    const newFavoritedState = !isFavorited;
+
+    try {
+      if (newFavoritedState) {
+        await addFavoritePet(user.uid, petId);
+      } else {
+        await removeFavoritePet(user.uid, petId);
+      }
+      // Atualiza o estado da UI apenas se a operação no banco for bem-sucedida
+      setIsFavorited(newFavoritedState);
+    } catch (err) {
+      console.error('Erro ao atualizar favorito:', err);
+      Alert.alert('Erro', 'Não foi possível atualizar o status de favorito.');
+    }
   };
 
-  const isScreenReady = isApiFinished && isImageRendered;
+  const isScreenReady = isApiFinished && isImageRendered && !isCheckingFavorite;
 
   if (isApiFinished && (error || !pet)) {
     return (
@@ -122,14 +165,13 @@ export default function PetInfoScreen() {
                   <Ionicons name="paw" size={80} color="#cccccc" />
                 </View>
               )}
-
-              {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
               <TouchableOpacity
                 style={styles.favoriteButton}
                 onPress={handleFavoriteToggle}
+                disabled={isCheckingFavorite} // Desabilita o botão enquanto verifica
               >
                 <Feather
-                  name={isFavorited ? 'heart' : 'heart'}
+                  name="heart"
                   size={24}
                   color={isFavorited ? '#E91E63' : '#434343'}
                   fill={isFavorited ? '#E91E63' : 'none'}
@@ -137,7 +179,6 @@ export default function PetInfoScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
             <View style={styles.contentContainer}>
               <Text style={styles.petName}>{pet.name}</Text>
 
@@ -234,7 +275,6 @@ export default function PetInfoScreen() {
             </View>
           </ScrollView>
 
-          {/* CORREÇÃO: Removida a condição isImageRendered daqui */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.adoptButton}
@@ -249,7 +289,6 @@ export default function PetInfoScreen() {
   );
 }
 
-// Estilos (permanecem os mesmos)
 const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
