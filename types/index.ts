@@ -1,5 +1,23 @@
 import { ImageSourcePropType } from 'react-native';
 
+/**
+ * Define a estrutura de dados para o cadastro de um novo usuário.
+ */
+export type UserData = {
+  nome: string;
+  idade: string;
+  email: string;
+  estado: string;
+  cidade: string;
+  endereco: string;
+  telefone: string;
+  nomeUsuario: string;
+  senha: string;
+  confirmacaoSenha: string;
+};
+
+// --- Tipos existentes de Pet (mantidos para consistência) ---
+
 export type PetFormData = {
   nome: string;
   especie: string | null;

@@ -4,17 +4,16 @@ import { Form, FormHandle } from '@/components/Form';
 import Header from '@/components/Header';
 import CustomImagePicker from '@/components/ImagePicker';
 import InputText from '@/components/Input';
-import { auth, db } from '@/firebaseConfig';
-import { uploadImageAsync } from '@/services/api';
+import { registerUser } from '@/services/api';
+import { UserData } from '@/types';
 import InputMasks from '@/utils/masks';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -25,72 +24,19 @@ import {
   View,
 } from 'react-native';
 
-type UserData = {
-  nome: string;
-  idade: string;
-  email: string;
-  estado: string;
-  cidade: string;
-  endereco: string;
-  telefone: string;
-  nomeUsuario: string;
-  senha: string;
-  confirmacaoSenha: string;
-};
-
 export default function CadastroPessoal() {
   const formRef = useRef<FormHandle<UserData>>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleImagePicked = (uri: string) => {
     setUserImage(uri);
   };
 
   const handleSubmit = async (values: UserData): Promise<void> => {
-    console.log("Submitting form with values:", values);
-    let userCredential: UserCredential | null = null;
-
+    setIsLoading(true);
     try {
-      const { email, senha, confirmacaoSenha, ...userData } = values;
-
-      userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-      const uid = userCredential.user.uid;
-
-      const usernameRef = doc(db, 'usernames', userData.nomeUsuario);
-      const usernameDoc = await getDoc(usernameRef);
-
-      if (usernameDoc.exists()) {
-        throw new FirebaseError(
-          'nome-usuario-already-in-use',
-          'Este nome de usuário já está em uso.',
-        );
-      }
-
-      await setDoc(usernameRef, { uid });
-      const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, {
-        ...userData,
-        image: uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      const fileName = `images/users/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
-      const imageUrl = userImage
-        ? await uploadImageAsync(userImage, fileName)
-        : null;
-
-      if (userImage && !imageUrl) {
-        return;
-      }
-
-      if (imageUrl) {
-        await setDoc(
-          userRef,
-          { image: imageUrl, updatedAt: serverTimestamp() },
-          { merge: true },
-        );
-      }
+      await registerUser(values, userImage);
 
       Alert.alert(
         'Cadastro Bem-Sucedido',
@@ -98,7 +44,7 @@ export default function CadastroPessoal() {
       );
       router.replace('/(drawer)');
     } catch (error) {
-      console.log("Error during user registration:", error);
+      console.log('Error during user registration:', error);
       if (error instanceof FirebaseError && formRef.current) {
         const { setFieldError } = formRef.current;
 
@@ -109,31 +55,22 @@ export default function CadastroPessoal() {
           case 'auth/weak-password':
             setFieldError('senha', 'Senha muito fraca (mínimo 6 caracteres).');
             break;
-          case 'nome-usuario-already-in-use':
+          case 'auth/username-already-in-use':
             setFieldError(
               'nomeUsuario',
               'Este nome de usuário já está em uso.',
             );
             break;
-          case 'missing-username':
-            setFieldError('nomeUsuario', 'O nome de usuário é obrigatório.');
-            break;
           default:
             Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
             console.error('Erro Firebase ao criar o usuário:', error.message);
-        }
-
-        if (userCredential) {
-          try {
-            await userCredential.user.delete();
-          } catch (e) {
-            console.warn('Falha ao remover usuário após erro:', e);
-          }
         }
       } else {
         console.error('Erro desconhecido ao criar o usuário:', error);
         Alert.alert('Erro de Cadastro', 'Ocorreu um erro inesperado.');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -143,11 +80,7 @@ export default function CadastroPessoal() {
         containerStyle={{ backgroundColor: '#88C9BF' }}
         title="Cadastro Pessoal"
         leftAction={
-          <TouchableOpacity
-            onPress={() => {
-              router.back();
-            }}
-          >
+          <TouchableOpacity onPress={() => router.back()}>
             <Feather name="arrow-left" size={24} color="#434343" />
           </TouchableOpacity>
         }
@@ -165,37 +98,29 @@ export default function CadastroPessoal() {
             </Text>
           </View>
 
-          {/* FORMULÁRIO DE CADASTRO */}
           <Form onSubmit={handleSubmit} ref={formRef} style={styles.form}>
             {/* INFORMAÇÕES PESSOAIS */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES PESSOAIS</Text>
-
               <InputText
                 name="nome"
-                inputType="text"
                 placeholder="Nome Completo"
+                inputType="text"
               />
-
               <InputText name="idade" inputType="number" placeholder="Idade" />
-
               <InputText
                 name="email"
                 inputType="email"
                 placeholder="E-mail"
                 required
               />
-
-              <InputText name="estado" inputType="text" placeholder="Estado" />
-
-              <InputText name="cidade" inputType="text" placeholder="Cidade" />
-
+              <InputText name="estado" placeholder="Estado" inputType="text" />
+              <InputText name="cidade" placeholder="Cidade" inputType="text" />
               <InputText
                 name="endereco"
-                inputType="text"
                 placeholder="Endereço"
+                inputType="text"
               />
-
               <InputText
                 name="telefone"
                 inputType="phone"
@@ -208,21 +133,18 @@ export default function CadastroPessoal() {
             {/* INFORMAÇÕES DE PERFIL */}
             <View style={styles.section}>
               <Text style={styles.sectionText}>INFORMAÇÕES DE PERFIL</Text>
-
               <InputText
                 name="nomeUsuario"
-                inputType="text"
                 placeholder="Nome de usuário"
+                inputType="text"
                 required
               />
-
               <InputText
                 name="senha"
                 inputType="password"
                 placeholder="Senha"
                 required
               />
-
               <InputText
                 name="confirmacaoSenha"
                 inputType="password"
@@ -254,15 +176,27 @@ export default function CadastroPessoal() {
             </View>
 
             <Button
-              style={styles.cadastroButton}
+              style={{
+                ...styles.cadastroButton,
+                ...(isLoading ? styles.cadastroButtonLoading : {}),
+              }}
               textColor="#434343"
               textStyle={{ fontWeight: 'bold' }}
               title="FAZER CADASTRO"
+              loading={isLoading}
               onPress={() => formRef.current?.submit()}
+              disabled={isLoading}
             />
           </Form>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Activity Indicator Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+        </View>
+      )}
     </CustomSafeArea>
   );
 }
@@ -270,61 +204,58 @@ export default function CadastroPessoal() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#88C9BF' },
   body: { flex: 1, backgroundColor: '#FAFAFA' },
-  content: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
+  content: { flex: 1, backgroundColor: '#FAFAFA' },
   advice: {
     margin: 16,
     borderRadius: 8,
     backgroundColor: '#CFE9E5',
     padding: 16,
   },
-  adviceText: {
-    textAlign: 'center',
-  },
-  form: {
-    flex: 1,
-    paddingHorizontal: 16,
-    gap: 16,
-    marginBottom: 32,
-  },
-  section: {
-    gap: 16,
-    alignItems: 'center',
-  },
+  adviceText: { textAlign: 'center' },
+  form: { flex: 1, paddingHorizontal: 16, gap: 16, marginBottom: 32 },
+  section: { gap: 16, alignItems: 'stretch' },
   sectionText: {
     color: '#599B9B',
-    textAlign: 'left',
+    alignSelf: 'flex-start',
+    fontWeight: 'bold',
   },
   cadastroButton: {
     width: '70%',
     backgroundColor: '#88C9BF',
     alignSelf: 'center',
   },
-  adicionarFotoButton: {
-    alignSelf: 'center',
+  cadastroButtonLoading: {
+    backgroundColor: '#A0D8CF',
   },
   imagePreview: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    marginBottom: 20,
-    backgroundColor: '#e0e0e0',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    alignSelf: 'center',
   },
   placeholderContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
     backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    alignSelf: 'center',
     borderWidth: 2,
     borderColor: '#ccc',
     borderStyle: 'dashed',
   },
-  placeholderText: {
-    color: '#888',
+  placeholderText: { color: '#888' },
+  // Estilo para o overlay de carregamento
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1, // Garante que ele fique sobre os outros elementos
   },
 });

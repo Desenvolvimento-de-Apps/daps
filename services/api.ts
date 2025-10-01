@@ -1,5 +1,7 @@
 import { auth, db, storage } from '@/firebaseConfig';
-import { Pet, PetFormData, PetDetails } from '@/types';
+import { Pet, PetFormData, PetDetails, UserData } from '@/types';
+import { FirebaseError } from 'firebase/app';
+import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import {
   collection,
   doc,
@@ -10,6 +12,98 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
+
+/**
+ * Registra um novo usuário no Firebase Auth e Firestore.
+ * @param values Os dados do formulário do usuário.
+ * @param userImage A URI da imagem de perfil selecionada (opcional).
+ */
+
+export const registerUser = async (
+  values: UserData,
+  userImage: string | null,
+): Promise<void> => {
+  let userCredential: UserCredential | null = null;
+  const { email, senha, ...userData } = values;
+
+  try {
+    // 1. Criar usuário no Firebase Authentication
+    userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+    const uid = userCredential.user.uid;
+
+    // 2. Verificar se o nome de usuário já existe
+    const usernameRef = doc(db, 'usernames', userData.nomeUsuario);
+    const usernameDoc = await getDoc(usernameRef);
+
+    if (usernameDoc.exists()) {
+      throw new FirebaseError(
+        'auth/username-already-in-use',
+        'Este nome de usuário já está em uso.',
+      );
+    }
+
+    // 3. Salvar o mapeamento nome de usuário -> UID
+    await setDoc(usernameRef, { uid });
+
+    // 4. Salvar os dados do usuário no Firestore
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, {
+      ...userData,
+      image: null, // Inicia como nulo, será atualizado após o upload
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // 5. Fazer upload da imagem de perfil, se houver
+    if (userImage) {
+      const fileName = `images/users/${uid}-${new Date().getTime()}.jpg`;
+      const imageUrl = await uploadImageAsync(userImage, fileName);
+      if (imageUrl) {
+        await setDoc(
+          userRef,
+          { image: imageUrl, updatedAt: serverTimestamp() },
+          { merge: true },
+        );
+      }
+    }
+  } catch (error) {
+    // Se qualquer passo falhar após a criação do usuário no Auth,
+    // o usuário recém-criado é deletado para evitar contas órfãs.
+    if (userCredential) {
+      try {
+        await userCredential.user.delete();
+      } catch (e) {
+        console.warn(
+          'Falha ao remover usuário órfão após erro no cadastro:',
+          e,
+        );
+      }
+    }
+    // Lança o erro original para ser tratado pelo componente
+    throw error;
+  }
+};
+
+/**
+ * Faz upload de uma imagem para o Firebase Storage.
+ * @param uri A URI local da imagem.
+ * @param fileName O nome do arquivo no Storage.
+ * @returns A URL de download da imagem ou null em caso de erro.
+ */
+export const uploadImageAsync = async (uri: string, fileName: string) => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro no upload da imagem: ', error);
+    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+    return null;
+  }
+};
 
 /**
  * Cria um novo documento de pet no Firestore.
@@ -74,21 +168,6 @@ export const getPets = async (): Promise<Pet[]> => {
   } catch (error) {
     console.error('Erro ao buscar pets:', error);
     throw new Error('Não foi possível buscar os pets.');
-  }
-};
-
-export const uploadImageAsync = async (uri: string, fileName: string) => {
-  try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const storageRef = ref(storage, fileName);
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-  } catch (error) {
-    console.error('Erro no upload da imagem: ', error);
-    Alert.alert('Erro', 'Não foi possível enviar a imagem.');
-    return null;
   }
 };
 
