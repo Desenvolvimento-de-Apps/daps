@@ -209,6 +209,39 @@ export const getPetById = async (petId: string): Promise<PetDetails | null> => {
 };
 
 /**
+ * Busca todos os pets favoritados por um usuário.
+ * @param userId O UID do usuário.
+ * @returns Uma lista com os detalhes completos dos pets favoritados.
+ */
+export const getFavoritePets = async (
+  userId: string,
+): Promise<PetDetails[]> => {
+  try {
+    const favoritesCollectionRef = collection(db, 'users', userId, 'favorites');
+    const querySnapshot = await getDocs(favoritesCollectionRef);
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    // Mapeia cada documento de favorito para uma promise que busca os detalhes do pet
+    const petPromises = querySnapshot.docs.map((doc) => {
+      const petId = doc.data().petId;
+      return getPetById(petId);
+    });
+
+    // Aguarda todas as buscas de pets terminarem
+    const pets = await Promise.all(petPromises);
+
+    // Filtra resultados nulos (caso um pet tenha sido deletado mas ainda esteja nos favoritos)
+    return pets.filter((pet): pet is PetDetails => pet !== null);
+  } catch (error) {
+    console.error('Erro ao buscar pets favoritos:', error);
+    throw new Error('Não foi possível buscar os pets favoritos.');
+  }
+};
+
+/**
  * Verifica se um pet está na lista de favoritos de um usuário.
  * @param userId O UID do usuário.
  * @param petId O ID do pet.

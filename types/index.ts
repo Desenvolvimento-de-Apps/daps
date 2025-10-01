@@ -1,3 +1,4 @@
+import { Timestamp } from 'firebase/firestore';
 import { ImageSourcePropType } from 'react-native';
 
 /**
@@ -57,4 +58,12 @@ export type PetDetails = {
   requirements: string[] | null;
   about: string;
   ownerUid: string;
+};
+
+/**
+ * Define a estrutura de um documento na subcoleção 'favorites'.
+ */
+export type Favorite = {
+  petId: string;
+  addedAt: Timestamp;
 };
