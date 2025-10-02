@@ -14,7 +14,8 @@ import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import PetCard from '@/components/PetCard';
 import { DrawerActions } from '@react-navigation/native';
-import { getPetsByOwner } from '@/services/api';
+import { getPetsByOwner, updatePetVisibility } from '@/services/api';
+import { Alert } from 'react-native';
 
 export default function MyPetsScreen() {
   const router = useRouter();
@@ -39,6 +40,30 @@ export default function MyPetsScreen() {
 
     fetchMyPets();
   }, []);
+
+  const handleVisibilityToggle = async (
+    petId: string,
+    currentVisibility: boolean,
+  ) => {
+    const newVisibility = !currentVisibility;
+
+    setPets((currentPets) =>
+      currentPets.map((p) =>
+        p.id === petId ? { ...p, isVisible: newVisibility } : p,
+      ),
+    );
+
+    try {
+      await updatePetVisibility(petId, newVisibility);
+    } catch (apiError) {
+      Alert.alert('Erro', 'Não foi possível alterar a visibilidade do pet.');
+      setPets((currentPets) =>
+        currentPets.map((p) =>
+          p.id === petId ? { ...p, isVisible: currentVisibility } : p,
+        ),
+      );
+    }
+  };
 
   const handleCardPress = (petId: string) => {
     router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
@@ -85,7 +110,14 @@ export default function MyPetsScreen() {
       <FlatList
         data={pets}
         renderItem={({ item }) => (
-          <PetCard pet={item} onPress={() => handleCardPress(item.id)} />
+          <PetCard
+            pet={item}
+            onPress={() => handleCardPress(item.id)}
+            showVisibilityToggle={true}
+            onVisibilityChange={() =>
+              handleVisibilityToggle(item.id, item.isVisible ?? true)
+            }
+          />
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
