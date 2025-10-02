@@ -10,6 +10,8 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  query,
+  where,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
@@ -297,5 +299,47 @@ export const removeFavoritePet = async (
   } catch (error) {
     console.error('Erro ao remover favorito:', error);
     throw new Error('Não foi possível remover o pet dos favoritos.');
+  }
+};
+
+/**
+ * Busca todos os pets cadastrados pelo usuário logado.
+ * @returns Uma lista de pets do usuário.
+ */
+export const getPetsByOwner = async (): Promise<Pet[]> => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    console.log('Nenhum usuário logado para buscar os pets.');
+    return [];
+  }
+
+  try {
+    const petsCollectionRef = collection(db, 'pets');
+
+    // Cria uma query para buscar documentos na coleção 'pets'
+    // onde o campo 'ownerUid' seja igual ao UID do usuário logado.
+    const q = query(petsCollectionRef, where('ownerUid', '==', user.uid));
+
+    const querySnapshot = await getDocs(q);
+    const pets: Pet[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      pets.push({
+        id: doc.id,
+        name: data.nome,
+        sex: data.sexo,
+        age: data.idade,
+        size: data.porte,
+        image: data.image,
+        location: data.location || 'Localização não informada',
+      });
+    });
+
+    return pets;
+  } catch (error) {
+    console.error('Erro ao buscar os pets do usuário:', error);
+    throw new Error('Não foi possível buscar seus pets.');
   }
 };
