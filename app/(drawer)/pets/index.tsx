@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useNavigation, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -23,22 +23,25 @@ export default function AdoptScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPets = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedPets = await getPets();
-        setPets(fetchedPets);
-      } catch (e) {
-        setError('Não foi possível carregar a lista de animais.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPets();
+  const fetchPets = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedPets = await getPets();
+      setPets(fetchedPets);
+    } catch (e) {
+      setError('Não foi possível carregar a lista de animais.');
+      console.error(e); // Adicionar um console.error pode ajudar a debugar
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPets();
+    }, [fetchPets]),
+  );
 
   const handleCardPress = (petId: string) => {
     router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
