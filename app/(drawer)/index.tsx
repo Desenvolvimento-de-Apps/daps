@@ -41,10 +41,8 @@ export default function WelcomeScreen() {
             textColor="#434343"
           />
           <Button
-            title="AJUDAR"
-            onPress={() => {
-              /* Lógica de navegação para ajudar */
-            }}
+            title="MEUS PETS"
+            onPress={() => router.push('/(drawer)/meus-pets')}
             backgroundColor="#FFD358"
             textColor="#434343"
           />
