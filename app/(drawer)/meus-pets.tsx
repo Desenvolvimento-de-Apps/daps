@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useNavigation, useRouter, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -24,22 +24,24 @@ export default function MyPetsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchMyPets = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedPets = await getPetsByOwner();
-        setPets(fetchedPets);
-      } catch (e) {
-        setError('Não foi possível carregar a sua lista de animais.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMyPets();
+  const fetchMyPets = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedPets = await getPetsByOwner();
+      setPets(fetchedPets);
+    } catch (e) {
+      setError('Não foi possível carregar a sua lista de animais.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyPets();
+    }, [fetchMyPets]),
+  );
 
   const handleVisibilityToggle = async (
     petId: string,
