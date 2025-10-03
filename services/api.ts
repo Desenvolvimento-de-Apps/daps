@@ -10,6 +10,9 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  query,
+  where,
+  updateDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
@@ -140,6 +143,7 @@ export const createPet = async (petData: PetFormData): Promise<void> => {
     location: location,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    isVisible: true,
   };
 
   // Salva o documento no Firestore
@@ -149,7 +153,9 @@ export const createPet = async (petData: PetFormData): Promise<void> => {
 export const getPets = async (): Promise<Pet[]> => {
   try {
     const petsCollectionRef = collection(db, 'pets');
-    const querySnapshot = await getDocs(petsCollectionRef);
+    const q = query(petsCollectionRef, where('isVisible', '==', true));
+    const querySnapshot = await getDocs(q);
+
     const pets: Pet[] = [];
 
     querySnapshot.forEach((doc) => {
@@ -162,6 +168,7 @@ export const getPets = async (): Promise<Pet[]> => {
         size: data.porte,
         image: data.image,
         location: data.location || 'Localização não informada',
+        isVisible: data.isVisible ?? true,
       });
     });
 
@@ -297,5 +304,69 @@ export const removeFavoritePet = async (
   } catch (error) {
     console.error('Erro ao remover favorito:', error);
     throw new Error('Não foi possível remover o pet dos favoritos.');
+  }
+};
+
+/**
+ * Busca todos os pets cadastrados pelo usuário logado.
+ * @returns Uma lista de pets do usuário.
+ */
+export const getPetsByOwner = async (): Promise<Pet[]> => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    console.log('Nenhum usuário logado para buscar os pets.');
+    return [];
+  }
+
+  try {
+    const petsCollectionRef = collection(db, 'pets');
+
+    // Cria uma query para buscar documentos na coleção 'pets'
+    // onde o campo 'ownerUid' seja igual ao UID do usuário logado.
+    const q = query(petsCollectionRef, where('ownerUid', '==', user.uid));
+
+    const querySnapshot = await getDocs(q);
+    const pets: Pet[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      pets.push({
+        id: doc.id,
+        name: data.nome,
+        sex: data.sexo,
+        age: data.idade,
+        size: data.porte,
+        image: data.image,
+        location: data.location || 'Localização não informada',
+        isVisible: data.isVisible ?? true,
+      });
+    });
+
+    return pets;
+  } catch (error) {
+    console.error('Erro ao buscar os pets do usuário:', error);
+    throw new Error('Não foi possível buscar seus pets.');
+  }
+};
+
+/**
+ * Atualiza o status de visibilidade de um pet.
+ * @param petId O ID do pet a ser atualizado.
+ * @param isVisible O novo status de visibilidade (true ou false).
+ */
+export const updatePetVisibility = async (
+  petId: string,
+  isVisible: boolean,
+): Promise<void> => {
+  try {
+    const petRef = doc(db, 'pets', petId);
+    await updateDoc(petRef, {
+      isVisible: isVisible,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar a visibilidade do pet:', error);
+    throw new Error('Não foi possível alterar a visibilidade do pet.');
   }
 };

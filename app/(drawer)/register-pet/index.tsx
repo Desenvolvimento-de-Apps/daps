@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import CustomImagePicker from '@/components/ImagePicker';
 import InputText from '@/components/Input';
 import RadioGroup from '@/components/RadioGroup';
+import { useAuth } from '@/contexts/AuthContext';
 import { createPet, uploadImageAsync } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -45,6 +46,7 @@ type PetData = {
 
 export default function RegisterPetScreen() {
   const formRef = useRef<FormHandle<PetData>>(null);
+  const { user } = useAuth();
 
   const [especie, setEspecie] = useState<string | null>(null);
   const [sexo, setSexo] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export default function RegisterPetScreen() {
 
   const handleSubmit = async (values: PetData): Promise<void> => {
     try {
-      const fileName = `images/pets/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
+      const fileName = `images/pets/${user?.uid}/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
       const imageUrl = petImage
         ? await uploadImageAsync(petImage, fileName)
         : null;

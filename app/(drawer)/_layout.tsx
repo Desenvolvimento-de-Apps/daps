@@ -67,6 +67,13 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
+        name="meus-pets"
+        options={{
+          drawerLabel: 'Meus Pets',
+          title: 'Meus Pets',
+        }}
+      />
+      <Drawer.Screen
         name="settings"
         options={{
           drawerLabel: 'Configurações',

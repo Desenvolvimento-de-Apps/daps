@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -14,24 +14,24 @@ import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import PetCard from '@/components/PetCard';
 import { DrawerActions } from '@react-navigation/native';
-import { getPets } from '@/services/api';
+import { getPetsByOwner, updatePetVisibility } from '@/services/api';
+import { Alert } from 'react-native';
 
-export default function AdoptScreen() {
+export default function MyPetsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPets = useCallback(async () => {
+  const fetchMyPets = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const fetchedPets = await getPets();
+      const fetchedPets = await getPetsByOwner();
       setPets(fetchedPets);
     } catch (e) {
-      setError('Não foi possível carregar a lista de animais.');
-      console.error(e); // Adicionar um console.error pode ajudar a debugar
+      setError('Não foi possível carregar a sua lista de animais.');
     } finally {
       setLoading(false);
     }
@@ -39,12 +39,40 @@ export default function AdoptScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchPets();
-    }, [fetchPets]),
+      fetchMyPets();
+    }, [fetchMyPets]),
   );
+
+  const handleVisibilityToggle = async (
+    petId: string,
+    currentVisibility: boolean,
+  ) => {
+    const newVisibility = !currentVisibility;
+
+    setPets((currentPets) =>
+      currentPets.map((p) =>
+        p.id === petId ? { ...p, isVisible: newVisibility } : p,
+      ),
+    );
+
+    try {
+      await updatePetVisibility(petId, newVisibility);
+    } catch (apiError) {
+      Alert.alert('Erro', 'Não foi possível alterar a visibilidade do pet.');
+      setPets((currentPets) =>
+        currentPets.map((p) =>
+          p.id === petId ? { ...p, isVisible: currentVisibility } : p,
+        ),
+      );
+    }
+  };
 
   const handleCardPress = (petId: string) => {
     router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
+  };
+
+  const handleAddNewPet = () => {
+    router.push('/(drawer)/register-pet');
   };
 
   if (loading) {
@@ -66,7 +94,7 @@ export default function AdoptScreen() {
   return (
     <CustomSafeArea style={styles.container}>
       <Header
-        title="Adotar"
+        title="Meus Pets"
         leftAction={
           <TouchableOpacity
             onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -75,12 +103,8 @@ export default function AdoptScreen() {
           </TouchableOpacity>
         }
         rightAction={
-          <TouchableOpacity
-            onPress={() => {
-              /* Lógica para busca */
-            }}
-          >
-            <Feather name="search" size={24} color="#434343" />
+          <TouchableOpacity onPress={handleAddNewPet}>
+            <Feather name="plus" size={26} color="#434343" />
           </TouchableOpacity>
         }
       />
@@ -88,12 +112,21 @@ export default function AdoptScreen() {
       <FlatList
         data={pets}
         renderItem={({ item }) => (
-          <PetCard pet={item} onPress={() => handleCardPress(item.id)} />
+          <PetCard
+            pet={item}
+            onPress={() => handleCardPress(item.id)}
+            showVisibilityToggle={true}
+            onVisibilityChange={() =>
+              handleVisibilityToggle(item.id, item.isVisible ?? true)
+            }
+          />
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Nenhum animal encontrado.</Text>
+          <Text style={styles.emptyText}>
+            Você ainda não cadastrou nenhum pet.
+          </Text>
         }
       />
     </CustomSafeArea>
@@ -113,10 +146,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 50,
     fontSize: 16,
     color: '#757575',
   },

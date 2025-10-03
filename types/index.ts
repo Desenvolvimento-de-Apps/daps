@@ -41,6 +41,7 @@ export type Pet = {
   age: 'FILHOTE' | 'ADULTO' | 'IDOSO';
   size: 'PEQUENO' | 'MÉDIO' | 'GRANDE';
   location: string;
+  isVisible: boolean;
 };
 
 export type PetDetails = {
