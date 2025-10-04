@@ -55,11 +55,7 @@ export default function PetInfoScreen() {
         // Busca os dados do pet
         const petData = await getPetById(petId);
         setPet(petData);
-        console.log("PET DATA", petData);
-        console.log("PET DATA IMAGE", petData?.image.length);
-        console.log("petData && petData.image.length === 0", petData && petData.image.length === 0)
         if (petData && petData.image.length > 0) {
-          console.log("TRUE")
           setIsImageRendered(true);
         }
 
@@ -110,8 +106,6 @@ export default function PetInfoScreen() {
     }
   };
 
-  console.log("RENDERIZAÇÃO DA PÁGINA")
-  console.log({ isApiFinished, isImageRendered, isCheckingFavorite });
   const isScreenReady = isApiFinished && isImageRendered && !isCheckingFavorite;
 
   if (isApiFinished && (error || !pet)) {
