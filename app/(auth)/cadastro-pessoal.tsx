@@ -9,6 +9,7 @@ import { UserData } from '@/types';
 import InputMasks from '@/utils/masks';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { ImagePickerAsset } from 'expo-image-picker';
 import { router } from 'expo-router';
 import { FirebaseError } from 'firebase/app';
 import { useRef, useState } from 'react';
@@ -29,8 +30,8 @@ export default function CadastroPessoal() {
   const [userImage, setUserImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleImagePicked = (uri: string) => {
-    setUserImage(uri);
+  const handleImagePicked = (assets: ImagePickerAsset[]) => {
+    setUserImage(assets[0].uri);
   };
 
   const handleSubmit = async (values: UserData): Promise<void> => {
@@ -80,7 +81,7 @@ export default function CadastroPessoal() {
         containerStyle={{ backgroundColor: '#88C9BF' }}
         title="Cadastro Pessoal"
         leftAction={
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.navigate('/(drawer)')}>
             <Feather name="arrow-left" size={24} color="#434343" />
           </TouchableOpacity>
         }
@@ -161,7 +162,12 @@ export default function CadastroPessoal() {
 
             <View style={styles.section}>
               <Text style={styles.sectionText}>FOTO DE PERFIL</Text>
-              <CustomImagePicker onImagePicked={handleImagePicked}>
+              <CustomImagePicker
+                multiple={false}
+                aspect={[1, 1]}
+                customStyle={{}}
+                onImagePicked={handleImagePicked}
+              >
                 {userImage ? (
                   <Image
                     source={{ uri: userImage }}
@@ -213,7 +219,7 @@ const styles = StyleSheet.create({
   },
   adviceText: { textAlign: 'center' },
   form: { flex: 1, paddingHorizontal: 16, gap: 16, marginBottom: 32 },
-  section: { gap: 16, alignItems: 'stretch' },
+  section: { gap: 16, alignItems: 'center' },
   sectionText: {
     color: '#599B9B',
     alignSelf: 'flex-start',

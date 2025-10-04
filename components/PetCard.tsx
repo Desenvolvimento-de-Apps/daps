@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Pet } from '@/types';
+import ImageCarousel from './ImageCarousel';
 
 interface PetCardProps {
   pet: Pet;

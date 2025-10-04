@@ -3,13 +3,13 @@ import CheckboxGroup from '@/components/CheckboxGroup';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import { Form, FormHandle } from '@/components/Form';
 import Header from '@/components/Header';
-import CustomImagePicker from '@/components/ImagePicker';
+import ImageCarouselWithAddImage from '@/components/ImageCarouselWithAddImage';
 import InputText from '@/components/Input';
 import RadioGroup from '@/components/RadioGroup';
 import { useAuth } from '@/contexts/AuthContext';
 import { createPet, uploadImageAsync } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
-import { Image } from 'expo-image';
+import { ImagePickerAsset } from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -20,7 +20,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
 } from 'react-native';
 
 type Especie = 'Cachorro' | 'Gato';
@@ -48,6 +47,7 @@ export default function RegisterPetScreen() {
   const formRef = useRef<FormHandle<PetData>>(null);
   const { user } = useAuth();
 
+  const [petImages, setPetImages] = useState<string[]>([]);
   const [especie, setEspecie] = useState<string | null>(null);
   const [sexo, setSexo] = useState<string | null>(null);
   const [porte, setPorte] = useState<string | null>(null);
@@ -56,12 +56,6 @@ export default function RegisterPetScreen() {
   const [saude, setSaude] = useState<string[]>([]);
   const [exigencias, setExigencias] = useState<string[]>([]);
   const [acompanhamento, setAcompanhamento] = useState<string[]>([]);
-
-  const [petImage, setPetImage] = useState<string | null>(null);
-  const handleImagePicked = (uri: string) => {
-    console.log('Image picked:', uri);
-    setPetImage(uri);
-  };
 
   const [isAcompanhamentoSelected, setIsAcompanhamentoSelected] =
     useState(false);
@@ -100,19 +94,39 @@ export default function RegisterPetScreen() {
     }
   };
 
+  const handleImagesPicked = (assets: ImagePickerAsset[]) => {
+    const newUris = assets.map((asset) => asset.uri);
+    setPetImages((currentImages) => [...currentImages, ...newUris]);
+  };
+
+  const handleRemoveImage = (uriToRemove: string) => {
+    setPetImages((currentImages) =>
+      currentImages.filter((uri) => uri !== uriToRemove),
+    );
+  };
+
   const handleSubmit = async (values: PetData): Promise<void> => {
     try {
-      const fileName = `images/pets/${user?.uid}/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
-      const imageUrl = petImage
-        ? await uploadImageAsync(petImage, fileName)
-        : null;
-      if (petImage && !imageUrl) {
+      if (!petImages || petImages.length === 0) {
+        Alert.alert('Erro', 'Por favor, adicione ao menos uma foto do animal.');
+        return;
+      }
+
+      const imageUrls = await Promise.all(
+        petImages.map(async (uri) => {
+          const fileName = `images/pets/${user?.uid}/${new Date().getTime()}-${Math.random().toString(36).substring(7)}.jpg`;
+          const imageUrl = uri ? await uploadImageAsync(uri, fileName) : null;
+          return imageUrl;
+        }),
+      );
+
+      if (!imageUrls || imageUrls.length === 0) {
         return;
       }
 
       const petFormData = {
         ...values,
-        image: imageUrl,
+        image: imageUrls,
         acompanhamento:
           values.acompanhamento == null
             ? null
@@ -174,15 +188,11 @@ export default function RegisterPetScreen() {
 
             <Text style={styles.formText}>FOTOS DO ANIMAL</Text>
 
-            <CustomImagePicker onImagePicked={handleImagePicked}>
-              {petImage ? (
-                <Image source={{ uri: petImage }} style={styles.imagePreview} />
-              ) : (
-                <View style={styles.placeholderContainer}>
-                  <Text style={styles.placeholderText}>+ Adicionar Foto</Text>
-                </View>
-              )}
-            </CustomImagePicker>
+            <ImageCarouselWithAddImage
+              uris={petImages}
+              onRemoveImage={handleRemoveImage}
+              onImagesPicked={handleImagesPicked}
+            />
 
             <Text style={styles.formText}>ESPÉCIE</Text>
             <RadioGroup
