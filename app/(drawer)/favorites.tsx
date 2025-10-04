@@ -55,11 +55,9 @@ const PetCard = ({
 
       <View style={styles.imageContainer}>
         <Image
-          source={
-            typeof item.image === 'string' ? { uri: item.image } : item.image
-          }
+          source={{ uri: item.image[0] }}
           style={styles.petImage}
-          onLoadEnd={() => setIsImageLoading(false)} // Esconde o loader quando a imagem termina de carregar
+          onLoadEnd={() => setIsImageLoading(false)}
         />
         {isImageLoading && (
           <View style={styles.imagePlaceholder}>
