@@ -36,7 +36,7 @@ export type PetFormData = {
 export type Pet = {
   id: string;
   name: string;
-  image: ImageSourcePropType;
+  image: string[];
   sex: 'MACHO' | 'FÊMEA';
   age: 'FILHOTE' | 'ADULTO' | 'IDOSO';
   size: 'PEQUENO' | 'MÉDIO' | 'GRANDE';
@@ -47,7 +47,7 @@ export type Pet = {
 export type PetDetails = {
   id: string;
   name: string;
-  image: ImageSourcePropType;
+  image: string[];
   location: string;
   sex: 'MACHO' | 'FÊMEA' | null;
   age: 'FILHOTE' | 'ADULTO' | 'IDOSO' | null;

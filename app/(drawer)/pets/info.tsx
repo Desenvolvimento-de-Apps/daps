@@ -22,6 +22,7 @@ import {
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import { auth } from '@/firebaseConfig';
+import ImageCarousel from '@/components/ImageCarousel';
 
 const formatArrayAsCommaSeparatedString = (arr: string[] | null) => {
   if (!arr || arr.length === 0) return null;
@@ -54,7 +55,7 @@ export default function PetInfoScreen() {
         // Busca os dados do pet
         const petData = await getPetById(petId);
         setPet(petData);
-        if (!petData || !petData.image) {
+        if (petData && petData.image.length > 0) {
           setIsImageRendered(true);
         }
 
@@ -144,21 +145,9 @@ export default function PetInfoScreen() {
           />
           <ScrollView>
             <View style={styles.imageContainer}>
-              {pet.image ? (
+              {pet.image.length > 0 ? (
                 <>
-                  {typeof pet.image === 'string' ? (
-                    <Image
-                      source={{ uri: pet.image }}
-                      style={styles.petImage}
-                      onLoad={() => setIsImageRendered(true)}
-                    />
-                  ) : (
-                    <Image
-                      source={pet.image}
-                      style={styles.petImage}
-                      onLoad={() => setIsImageRendered(true)}
-                    />
-                  )}
+                  <ImageCarousel containerStyle={styles.petImage} uris={pet.image} />
                 </>
               ) : (
                 <View style={[styles.petImage, styles.placeholderImage]}>
@@ -168,7 +157,7 @@ export default function PetInfoScreen() {
               <TouchableOpacity
                 style={styles.favoriteButton}
                 onPress={handleFavoriteToggle}
-                disabled={isCheckingFavorite} // Desabilita o botão enquanto verifica
+                disabled={isCheckingFavorite}
               >
                 <Feather
                   name="heart"

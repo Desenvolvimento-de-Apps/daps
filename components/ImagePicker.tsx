@@ -1,40 +1,107 @@
-import * as ImagePicker from 'expo-image-picker';
+import {
+  ImagePickerAsset,
+  ImagePickerOptions,
+  launchCameraAsync,
+  launchImageLibraryAsync,
+  PermissionStatus,
+  requestCameraPermissionsAsync,
+  requestMediaLibraryPermissionsAsync,
+} from 'expo-image-picker';
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Alert, TouchableOpacity } from 'react-native';
 
 interface GenericImagePickerProps {
-  onImagePicked: (uri: string) => void;
+  onImagePicked: (assets: ImagePickerAsset[]) => void;
   children: React.ReactNode;
-  pickerOptions?: Partial<ImagePicker.ImagePickerOptions>;
+  pickerOptions?: Partial<ImagePickerOptions>;
+  multiple?: boolean;
+  limitedSelection?: number;
+  aspect?: [number, number];
+  customStyle?: object;
 }
 
 export default function CustomImagePicker({
   onImagePicked,
   children,
   pickerOptions,
+  multiple,
+  limitedSelection,
+  aspect,
+  customStyle,
 }: GenericImagePickerProps) {
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== ImagePicker.PermissionStatus.GRANTED) {
-      alert('Desculpe, precisamos da permissão para acessar suas fotos!');
+  const defaultOptions: ImagePickerOptions = {
+    allowsEditing: true,
+    allowsMultipleSelection: multiple ?? true,
+    selectionLimit: limitedSelection ?? 1,
+    aspect: aspect ?? [4, 3],
+    quality: 0.6,
+  };
+
+  const openCamera = async () => {
+    const { status } = await requestCameraPermissionsAsync();
+    if (status !== PermissionStatus.GRANTED) {
+      Alert.alert(
+        'Permissão necessária',
+        'Desculpe, precisamos da permissão da câmera para continuar!',
+      );
       return;
     }
 
-    const defaultOptions: ImagePicker.ImagePickerOptions = {
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.6,
-    };
-
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const result = await launchCameraAsync({
       ...defaultOptions,
       ...pickerOptions,
     });
 
     if (!result.canceled) {
-      onImagePicked(result.assets[0].uri);
+      onImagePicked(result.assets);
     }
   };
 
-  return <TouchableOpacity onPress={pickImage}>{children}</TouchableOpacity>;
+  const openGallery = async () => {
+    const { status } = await requestMediaLibraryPermissionsAsync();
+    if (status !== PermissionStatus.GRANTED) {
+      Alert.alert(
+        'Permissão necessária',
+        'Desculpe, precisamos da permissão para acessar suas fotos!',
+      );
+      return;
+    }
+
+    const result = await launchImageLibraryAsync({
+      ...defaultOptions,
+      ...pickerOptions,
+    });
+
+    if (!result.canceled) {
+      onImagePicked(result.assets);
+    }
+  };
+
+  const handlePickImage = () => {
+    Alert.alert(
+      'Selecionar Imagem',
+      'Escolha de onde você quer pegar a foto:',
+      [
+        {
+          text: 'Câmera',
+          onPress: openCamera,
+        },
+        {
+          text: 'Galeria',
+          onPress: openGallery,
+        },
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  return (
+    <TouchableOpacity style={customStyle} onPress={handlePickImage}>
+      {children}
+    </TouchableOpacity>
+  );
 }
