@@ -12,7 +12,7 @@ import { db } from '@/firebaseConfig';
 export async function registerForPushNotificationsAsync(userId: string) {
   // Notificações só funcionam em dispositivos físicos
   if (!Device.isDevice) {
-    console.log('Push notifications are only available on physical devices.');
+    console.log('As notificações push só funcionam em dispositivos físicos.');
     return;
   }
 
@@ -24,30 +24,32 @@ export async function registerForPushNotificationsAsync(userId: string) {
     finalStatus = status;
   }
   if (finalStatus !== 'granted') {
-    console.log('Permission to receive push notifications was denied.');
-
-    Alert.alert(
-      'Permissão Negada',
-      'Você precisa habilitar as permissões de notificações nas configurações do dispositivo.',
-    );
+    console.log('Permissão para receber notificações foi negada.');
+    // Opcional: Informar ao usuário que ele não receberá notificações.
+    // Alert.alert(
+    //   'Permissão Negada',
+    //   'Você não receberá notificações sobre novos pets para adoção.',
+    // );
     return;
   }
 
   // 2. Obtém o Expo Push Token
   try {
     const token = await Notifications.getExpoPushTokenAsync({
+      // O projectId é essencial para o Expo identificar seu app
       projectId: Constants.expoConfig?.extra?.eas.projectId,
     });
 
     if (token.data) {
-      console.log('Expo Push Token:', token.data);
+      console.log('Expo Push Token obtido:', token.data);
       // 3. Salva o token no documento do usuário no Firestore
+      // A opção { merge: true } garante que não vamos sobrescrever outros dados do usuário
       const userDocRef = doc(db, 'users', userId);
       await setDoc(userDocRef, { pushToken: token.data }, { merge: true });
-      console.log('Push token saved for user:', userId);
+      console.log('Token de notificação salvo para o usuário:', userId);
     }
   } catch (error) {
-    console.error('Error getting or saving push token:', error);
+    console.error('Erro ao obter ou salvar o token de notificação:', error);
   }
 
   // Configuração do canal para Android (necessário a partir do Android 8.0)

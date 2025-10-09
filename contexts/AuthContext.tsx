@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const idTokenResult = await user.getIdTokenResult(true);
         setRoles(idTokenResult.claims.roles || {});
 
-        // Registra o dispositivo para notificações push
         await registerForPushNotificationsAsync(user.uid);
       } else {
         setRoles({});
