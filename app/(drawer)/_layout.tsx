@@ -74,6 +74,13 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
+        name="conversas"
+        options={{
+          drawerLabel: 'Chat',
+          title: 'Chat',
+        }}
+      />
+      <Drawer.Screen
         name="settings"
         options={{
           drawerLabel: 'Configurações',

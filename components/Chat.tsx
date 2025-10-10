@@ -16,9 +16,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { auth, db } from '../firebaseConfig'; // Ajuste o caminho conforme sua estrutura
+import { auth, db } from '../firebaseConfig';
+import { Feather } from '@expo/vector-icons';
 
-// Definição do tipo para mensagens
 interface Message {
   id: string;
   text: string;
@@ -27,7 +27,6 @@ interface Message {
   userName: string;
 }
 
-// Definição das props
 interface ChatScreenProps {
   otherUserId: string;
 }
@@ -88,7 +87,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
       ]}
     >
       <Text style={styles.messageText}>{item.text}</Text>
-      <Text style={styles.messageUser}>{item.userName}</Text>
+      <Text style={styles.messageUser}>{item.createdAt.toDate().toLocaleString()}</Text>
     </View>
   );
 
@@ -109,7 +108,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           placeholderTextColor="#666"
         />
         <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
+          <Feather name='send' size={24} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>
@@ -165,10 +164,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   sendButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    backgroundColor: '#88c9bf',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 100,
   },
   sendButtonText: {
     color: '#fff',
