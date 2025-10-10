@@ -15,6 +15,7 @@ export type UserData = {
   nomeUsuario: string;
   senha: string;
   confirmacaoSenha: string;
+  pushToken?: string; // MODIFICAÇÃO: Campo adicionado
 };
 
 // --- Tipos existentes de Pet (mantidos para consistência) ---

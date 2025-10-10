@@ -8,6 +8,7 @@ import React, {
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { router } from 'expo-router';
+import { registerForPushNotificationsAsync } from '@/services/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +38,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Força a atualização do token para obter as custom claims mais recentes.
         const idTokenResult = await user.getIdTokenResult(true);
         setRoles(idTokenResult.claims.roles || {});
+
+        await registerForPushNotificationsAsync(user.uid);
       } else {
         setRoles({});
       }
@@ -54,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await auth.signOut();
       setUser(null);
       setRoles({});
-      router.replace('/login');
+      router.replace('/(auth)/login');
     },
     isLoading,
   };
