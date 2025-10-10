@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export interface ChatPersonCardProps {
   userId: string;
   name: string;
-  nickname: string;
+  nickname?: string;
   profileImageUrl: string;
   lastMessage: string;
   lastMessageTime: string;
