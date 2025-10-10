@@ -27,7 +27,7 @@ const Button: React.FC<ButtonProps> = ({
   loading = false,
   backgroundColor = '#007BFF',
   textColor = '#fff',
-  borderRadius = 8,
+  borderRadius = 4,
   style,
   textStyle,
 }) => {
