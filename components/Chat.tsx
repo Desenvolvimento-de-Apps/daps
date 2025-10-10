@@ -38,7 +38,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
 
   const userId = auth.currentUser?.uid || null;
   const userName = auth.currentUser?.displayName || null;
-  const chatId = otherUserId + '_' + userId;
+  const chatId = [userId, otherUserId].sort().join('_');
 
   useEffect(() => {
     if (!chatId) return;
