@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import {
   addDoc,
   collection,
@@ -9,15 +10,15 @@ import {
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { auth, db } from '../firebaseConfig';
-import { Feather } from '@expo/vector-icons';
+import { auth, db } from '@/firebaseConfig';
 
 interface Message {
   id: string;
@@ -34,7 +35,6 @@ interface ChatScreenProps {
 export default function ChatScreen({ otherUserId }: ChatScreenProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
-  const insets = useSafeAreaInsets();
 
   const userId = auth.currentUser?.uid || null;
   const userName = auth.currentUser?.displayName || null;
@@ -87,17 +87,23 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
       ]}
     >
       <Text style={styles.messageText}>{item.text}</Text>
-      <Text style={styles.messageUser}>{item.createdAt.toDate().toLocaleString()}</Text>
+      <Text style={styles.messageUser}>
+        {item.createdAt.toDate().toLocaleString()}
+      </Text>
     </View>
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <FlatList
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         style={styles.messageList}
+        contentContainerStyle={{ paddingBottom: 10 }} // Adiciona um espaço no final da lista
       />
       <View style={styles.inputContainer}>
         <TextInput
@@ -108,17 +114,17 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           placeholderTextColor="#666"
         />
         <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Feather name='send' size={24} color="#fff" />
+          <Feather name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
   messageList: {
     flex: 1,
@@ -135,17 +141,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   receivedMessage: {
-    backgroundColor: '#ECECEC',
+    backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#ECECEC',
   },
   messageText: {
     fontSize: 16,
     color: '#000',
   },
   messageUser: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: '#999',
     marginTop: 4,
+    textAlign: 'right',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -153,25 +162,24 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: 1,
     borderTopColor: '#ccc',
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
+    height: 40,
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
     marginRight: 10,
     backgroundColor: '#fff',
   },
   sendButton: {
     backgroundColor: '#88c9bf',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 100,
-  },
-  sendButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    justifyContent: 'center',
   },
 });

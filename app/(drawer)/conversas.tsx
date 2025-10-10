@@ -13,13 +13,12 @@ import { FlatList } from 'react-native-gesture-handler';
 
 const mockMessages: ChatPersonCardProps[] = [
   {
-    userId: '0MUIAYirvbNEExHFOWV730B2VzV2',
-    name: 'Arthur Silva',
-    nickname: 'tutu',
+    userId: 'rTz12xtCoXb5bOY7WMXk8ssCThq1',
+    name: 'Cassio Borges',
     profileImageUrl:
-      'https://scontent-bsb1-1.cdninstagram.com/v/t51.2885-19/400434201_645360541110483_1069852098044372945_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45NjAuYzIifQ&_nc_ht=scontent-bsb1-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2QHhnY8m-gIJB5YEgL1vosraDL0xtF2ejDMMyIgQkVurfpdmMIAnbWasaZEk7BecxaICskmAOzfzA4BC70w00HuD&_nc_ohc=jiz_p4Wno2sQ7kNvwHXV0-H&_nc_gid=35A0MTyv5DO6ThefgzCcrA&edm=ALGbJPMBAAAA&ccb=7-5&oh=00_AfdshaS_8tpeZWdGdgXOOu192Y4ov44KCMjOR8dVlqVttQ&oe=68EE4293&_nc_sid=7d3ac5',
-    lastMessage: 'Opa chefe, tudo certo? Me vê esse gato pra mim?',
-    lastMessageTime: '14:14',
+      'https://scontent-bsb1-1.cdninstagram.com/v/t51.2885-19/221272418_826568084660263_1883689967699555897_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45MzcuYzIifQ&_nc_ht=scontent-bsb1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QFDV1w03lsLfGt44tUcgAAikE41XHzcSY9EbuH0eQ9_SSoMRgMjc6UBiA1djeN3vZ8AwtOuPvRFITAvmW4YgvgA&_nc_ohc=8IZjjX_PFhgQ7kNvwG1HL_2&_nc_gid=CZiOkzf14_SH4-h9BqZ23w&edm=ALGbJPMBAAAA&ccb=7-5&oh=00_Afe78C_f7gNs6M9j8MHEmCpEdkvxDD-GRhKOMUECaSyYiw&oe=68EE4254&_nc_sid=7d3ac5',
+    lastMessage: 'Receba esse chat!',
+    lastMessageTime: '00:00',
   },
   {
     userId: '2',
