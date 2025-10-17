@@ -370,3 +370,123 @@ export const updatePetVisibility = async (
     throw new Error('Não foi possível alterar a visibilidade do pet.');
   }
 };
+
+/**
+ * Busca os dados de um usuário específico pelo seu UID.
+ * @param userId O UID do usuário a ser buscado.
+ * @returns Os dados do usuário ou null se não for encontrado.
+ */
+export const getUserDataById = async (
+  userId: string,
+): Promise<UserData | null> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      return { uid: userDoc.id, ...userDoc.data() } as unknown as UserData;
+    } else {
+      console.warn(`Usuário com ID ${userId} não encontrado.`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error);
+    throw new Error('Não foi possível buscar os dados do usuário.');
+  }
+};
+
+/**
+ * Registra o interesse do usuário logado em um pet específico.
+ * @param petId O ID do pet no qual o usuário está interessado.
+ */
+export const markInterestInPet = async (petId: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Você precisa estar logado para demonstrar interesse.');
+  }
+
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', user.uid);
+    await setDoc(interestRef, {
+      userId: user.uid,
+      interestedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao marcar interesse:', error);
+    throw new Error('Não foi possível registrar seu interesse no pet.');
+  }
+};
+
+/**
+ * Busca todos os usuários que demonstraram interesse em um pet específico.
+ * @param petId O ID do pet.
+ * @returns Uma lista com os dados completos dos usuários interessados.
+ */
+export const getInterestedUsersForPet = async (
+  petId: string,
+): Promise<UserData[]> => {
+  try {
+    const interestCollectionRef = collection(db, 'pets', petId, 'interestedUsers');
+    const querySnapshot = await getDocs(interestCollectionRef);
+
+    if (querySnapshot.empty) {
+      return []; // Retorna um array vazio se ninguém demonstrou interesse
+    }
+
+    // Mapeia cada documento de interesse para uma promise que busca os dados do usuário
+    const userPromises = querySnapshot.docs.map((doc) => {
+      const userId = doc.data().userId;
+      return getUserDataById(userId);
+    });
+
+    // Aguarda todas as buscas de usuários terminarem
+    const users = await Promise.all(userPromises);
+
+    // Filtra resultados nulos (caso um usuário tenha sido deletado)
+    return users.filter((user): user is UserData => user !== null);
+  } catch (error) {
+    console.error('Erro ao buscar usuários interessados:', error);
+    throw new Error('Não foi possível buscar a lista de interessados.');
+  }
+};
+
+/**
+ * Verifica se um usuário já marcou interesse em um pet.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ * @returns `true` se o interesse já foi marcado, `false` caso contrário.
+ */
+export const hasUserMarkedInterest = async (
+  userId: string,
+  petId: string,
+): Promise<boolean> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    const docSnap = await getDoc(interestRef);
+    return docSnap.exists();
+  } catch (error) {
+    console.error('Erro ao verificar interesse:', error);
+    return false;
+  }
+};
+
+/**
+ * Remove o interesse do usuário logado em um pet específico.
+ * @param petId O ID do pet do qual o interesse será removido.
+ */
+export const removeInterestInPet = async (petId: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Você precisa estar logado para realizar esta ação.');
+  }
+
+  try {
+    // A referência aponta para o documento exato do interesse do usuário
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', user.uid);
+    // Deleta o documento, efetivamente removendo o interesse
+    await deleteDoc(interestRef);
+  } catch (error) {
+    console.error('Erro ao remover interesse:', error);
+    throw new Error('Não foi possível remover seu interesse no pet.');
+  }
+};
