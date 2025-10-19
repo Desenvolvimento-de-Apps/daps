@@ -19,13 +19,13 @@ import {
   View,
 } from 'react-native';
 import { auth, db } from '@/firebaseConfig';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
   text: string;
   createdAt: Timestamp;
   userId: string;
-  userName: string;
 }
 
 interface ChatScreenProps {
@@ -33,11 +33,12 @@ interface ChatScreenProps {
 }
 
 export default function ChatScreen({ otherUserId }: ChatScreenProps) {
+  const auth = useAuth();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
 
-  const userId = auth.currentUser?.uid || null;
-  const userName = auth.currentUser?.displayName || null;
+  const userId = auth.user?.uid || null;
   const chatId = [userId, otherUserId].sort().join('_');
 
   useEffect(() => {
@@ -64,14 +65,13 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
   }, [chatId]);
 
   const sendMessage = async () => {
-    if (newMessage.trim() === '' || !chatId || !userId || !userName) return;
+    if (newMessage.trim() === '' || !chatId || !userId) return;
 
     try {
       await addDoc(collection(db, 'chat', chatId, 'messages'), {
         text: newMessage,
         createdAt: Timestamp.now(),
         userId,
-        userName,
       });
       setNewMessage('');
     } catch (error) {
@@ -103,7 +103,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         style={styles.messageList}
-        contentContainerStyle={{ paddingBottom: 10 }} // Adiciona um espaço no final da lista
+        contentContainerStyle={{ paddingBottom: 10 }}
       />
       <View style={styles.inputContainer}>
         <TextInput
@@ -113,7 +113,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           placeholder="Digite sua mensagem..."
           placeholderTextColor="#666"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage()}>
           <Feather name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>

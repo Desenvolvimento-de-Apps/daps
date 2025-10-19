@@ -1,5 +1,4 @@
 import { Timestamp } from 'firebase/firestore';
-import { ImageSourcePropType } from 'react-native';
 
 /**
  * Define a estrutura de dados para o cadastro de um novo usuário.
@@ -70,4 +69,13 @@ export type PetDetails = {
 export type Favorite = {
   petId: string;
   addedAt: Timestamp;
+};
+
+export type ChatMessage = {
+  userId: string;
+  name: string;
+  nickname?: string;
+  profileImageUrl: string;
+  lastMessage: string;
+  lastMessageTime: string;
 };

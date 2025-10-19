@@ -1,18 +1,21 @@
+import { ChatPersonCardProps } from '@/components/ChatPersonCard';
 import { auth, db, storage } from '@/firebaseConfig';
-import { Pet, PetFormData, PetDetails, UserData } from '@/types';
+import { ChatMessage, Pet, PetDetails, PetFormData, UserData } from '@/types';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, UserCredential } from 'firebase/auth';
 import {
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
-  query,
-  where,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
@@ -28,6 +31,7 @@ export const registerUser = async (
   userImage: string | null,
 ): Promise<void> => {
   let userCredential: UserCredential | null = null;
+  let userImageUrl: string | null = null;
   const { email, senha, ...userData } = values;
 
   try {
@@ -61,18 +65,21 @@ export const registerUser = async (
     // 5. Fazer upload da imagem de perfil, se houver
     if (userImage) {
       const fileName = `images/users/${uid}-${new Date().getTime()}.jpg`;
-      const imageUrl = await uploadImageAsync(userImage, fileName);
-      if (imageUrl) {
+      userImageUrl = await uploadImageAsync(userImage, fileName);
+      if (userImageUrl) {
         await setDoc(
           userRef,
-          { image: imageUrl, updatedAt: serverTimestamp() },
+          { image: userImageUrl, updatedAt: serverTimestamp() },
           { merge: true },
         );
       }
     }
+
+    await updateProfile(userCredential.user, {
+      displayName: userData.nomeUsuario,
+      photoURL: userImageUrl
+    });
   } catch (error) {
-    // Se qualquer passo falhar após a criação do usuário no Auth,
-    // o usuário recém-criado é deletado para evitar contas órfãs.
     if (userCredential) {
       try {
         await userCredential.user.delete();
@@ -83,7 +90,6 @@ export const registerUser = async (
         );
       }
     }
-    // Lança o erro original para ser tratado pelo componente
     throw error;
   }
 };
@@ -488,5 +494,45 @@ export const removeInterestInPet = async (petId: string): Promise<void> => {
   } catch (error) {
     console.error('Erro ao remover interesse:', error);
     throw new Error('Não foi possível remover seu interesse no pet.');
+  }
+};
+export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
+  try {
+    const userChatsRef = collection(db, 'users', userId, 'chats');
+    const userChatsSnap = await getDocs(userChatsRef);
+    const chatKeys = userChatsSnap.docs.map((doc) => doc.id);
+
+    if (chatKeys.length === 0) {
+      return [];
+    }
+    
+    const chatPromises = chatKeys.map(async (chatKey) => {
+      const messagesRef = collection(db, 'chat', chatKey, 'messages');
+      const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
+      const msgSnapshot = await getDocs(q);
+      const lastMessage = msgSnapshot.empty ? null : msgSnapshot.docs[0].data();
+
+      const participants = chatKey.split('_');
+      const otherUid = participants[0] === userId ? participants[1] : participants[0];
+      const otherUserRef = doc(db, 'users', otherUid);
+      const otherSnap = await getDoc(otherUserRef);
+      const otherData = otherSnap.exists() ? otherSnap.data() : { name: 'Desconhecido', photoUrl: '' };
+
+      return   {
+        userId: otherUid,
+        name: otherData.nome,
+        nickname: otherData.nomeUsuario,
+        profileImageUrl: otherData.imagem,
+        lastMessage: lastMessage ? lastMessage.text : null,
+        lastMessageTime: lastMessage ? lastMessage.createdAt.toDate().toISOString() : null,
+      };
+    });
+    
+    const chats = await Promise.all(chatPromises);
+
+    return chats;
+  } catch (error) {
+    console.error('Erro ao buscar conversas do usuário:', error);
+    throw new Error('Não foi possível buscar suas conversas.');
   }
 };
