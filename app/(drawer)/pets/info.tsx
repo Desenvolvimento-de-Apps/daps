@@ -37,6 +37,8 @@ export default function PetInfoScreen() {
   const router = useRouter();
   const { petId } = useLocalSearchParams<{ petId: string }>();
 
+  const user = auth.currentUser;
+
   const [pet, setPet] = useState<PetDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -66,15 +68,17 @@ export default function PetInfoScreen() {
           setIsImageRendered(true);
         }
 
-        const user = auth.currentUser;
         if (user) {
           const isMyPet = petData?.ownerUid === user.uid;
           setIsOwner(isMyPet);
 
-          // Se não for o dono, verifica se é favorito
+          // Se não for o dono, verifica se é favorito ou interessado
           if (!isMyPet) {
             const favoritedStatus = await isPetFavorited(user.uid, petId);
             setIsFavorited(favoritedStatus);
+
+            const interestStatus = await hasUserMarkedInterest(user.uid, petId);
+            setHasMarkedInterest(interestStatus);
           }
         }
       } catch (e) {
@@ -87,7 +91,7 @@ export default function PetInfoScreen() {
     };
 
     fetchPetDetails();
-  }, [petId]);
+  }, [petId, user]);
 
   const handleFavoriteToggle = async () => {
     const user = auth.currentUser;
