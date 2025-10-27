@@ -1,5 +1,5 @@
 import { auth, db, storage } from '@/firebaseConfig';
-import { ChatMessage, Pet, PetDetails, PetFormData, UserData } from '@/types';
+import { Pet, PetDetails, PetFormData, UserData } from '@/types';
 import { FirebaseError } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
@@ -80,7 +80,7 @@ export const registerUser = async (
 
     await updateProfile(userCredential.user, {
       displayName: userData.nomeUsuario,
-      photoURL: userImageUrl
+      photoURL: userImageUrl,
     });
   } catch (error) {
     if (userCredential) {
@@ -504,34 +504,40 @@ export const removeInterestInPet = async (petId: string): Promise<void> => {
     throw new Error('Não foi possível remover seu interesse no pet.');
   }
 };
-
-export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
+// : Promise<ChatMessage[]>
+export const getUserChats = async (userId: string) => {
   try {
-    const userChatsRef = collection(db, 'users', userId, 'chats');
-    const userChatsSnap = await getDocs(userChatsRef);
-    const chatKeys = userChatsSnap.docs.map((doc) => doc.id);
+    const chatsCollectionRef = collection(db, 'chats');
+    const userChatsQuery = query(
+      chatsCollectionRef,
+      where('participants', 'array-contains', userId),
+    );
+    const userChatsSnap = await getDocs(userChatsQuery);
 
-    if (chatKeys.length === 0) {
+    if (userChatsSnap.empty) {
+      console.log('Nenhuma conversa encontrada para o usuário:', userId);
       return [];
     }
 
-    const chatPromises = chatKeys.map(async (chatKey) => {
-      const messagesRef = collection(db, 'chat', chatKey, 'messages');
+    const chatPromises = userChatsSnap.docs.map(async (chatDoc) => {
+      const chatKey = chatDoc.id;
+      const chatData = chatDoc.data();
+      const participants = chatData.participants as string[];
 
+      const otherUid = participants.find((uid) => uid !== userId) || 'unknown';
+      const messagesRef = collection(db, 'chats', chatKey, 'messages');
       const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
       const msgSnapshot = await getDocs(q);
       const lastMessage = msgSnapshot.empty ? null : msgSnapshot.docs[0].data();
 
-      const participants = chatKey.split('_');
-      const otherUid =
-        participants[0] === userId ? participants[1] : participants[0];
       const otherUserRef = doc(db, 'users', otherUid);
       const otherSnap = await getDoc(otherUserRef);
       const otherData = otherSnap.exists()
         ? otherSnap.data()
-        : { name: 'Desconhecido', photoUrl: '' };
+        : { nome: 'Desconhecido', nomeUsuario: 'desconhecido', image: '' };
 
       return {
+        chatKey: chatKey,
         userId: otherUid,
         name: otherData.nome,
         nickname: otherData.nomeUsuario,
@@ -546,7 +552,7 @@ export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
     const chats = await Promise.all(chatPromises);
 
     console.log('Chats fetched for user:', userId, chats);
-    
+
     return chats;
   } catch (error) {
     console.error('Erro ao buscar conversas do usuário:', error);
@@ -557,28 +563,20 @@ export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
 export const startChatBetweenUsers = async (
   userId1: string,
   userId2: string,
+  petId: string,
 ): Promise<string> => {
   try {
-    const chatKey = [userId1, userId2].sort().join('_');
+    const chatKey = [userId1, userId2].sort().join('_') + '_' + petId;
 
-    const chatRef = doc(db, 'chat', chatKey);
+    const chatRef = doc(db, 'chats', chatKey);
     const chatSnap = await getDoc(chatRef);
 
     if (!chatSnap.exists()) {
-      await setDoc(chatRef, {});
-    }
-
-    
-    const user1ChatRef = doc(db, 'users', userId1, 'chats', chatKey);
-    const user1ChatSnap = await getDoc(user1ChatRef);
-    if (!user1ChatSnap.exists()) {
-      await setDoc(user1ChatRef, { createdAt: serverTimestamp() });
-    }
-
-    const user2ChatRef = doc(db, 'users', userId2, 'chats', chatKey);
-    const user2ChatSnap = await getDoc(user2ChatRef);
-    if (!user2ChatSnap.exists()) {
-      await setDoc(user2ChatRef, { createdAt: serverTimestamp() });
+      await setDoc(chatRef, {
+        participants: [userId1, userId2],
+        petId: petId,
+        createdAt: serverTimestamp(),
+      });
     }
 
     return chatKey;

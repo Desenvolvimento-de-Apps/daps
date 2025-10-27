@@ -1,3 +1,5 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import {
   addDoc,
@@ -18,8 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { auth, db } from '@/firebaseConfig';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -44,7 +44,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
   useEffect(() => {
     if (!chatId) return;
 
-    const messagesRef = collection(db, 'chat', chatId, 'messages');
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(
@@ -68,7 +68,7 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
     if (newMessage.trim() === '' || !chatId || !userId) return;
 
     try {
-      await addDoc(collection(db, 'chat', chatId, 'messages'), {
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
         text: newMessage,
         createdAt: Timestamp.now(),
         userId,
@@ -113,7 +113,10 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           placeholder="Digite sua mensagem..."
           placeholderTextColor="#666"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage()}>
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={() => sendMessage()}
+        >
           <Feather name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>

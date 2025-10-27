@@ -16,6 +16,8 @@ const formatText = (text: string, maxLength: number) => {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+
   const date = new Date(dateString);
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();
@@ -35,8 +37,6 @@ const formatDate = (dateString: string) => {
 };
 
 export default function ChatPersonCard(props: ChatPersonCardProps) {
-  console.log('Rendering ChatPersonCard for user:', props.userId);
-  console.log('Profile Image URL:', props.profileImageUrl);
   return (
     <TouchableOpacity style={styles.container} onPress={props.onPress}>
       <Image source={{ uri: props.profileImageUrl }} style={styles.userImage} />

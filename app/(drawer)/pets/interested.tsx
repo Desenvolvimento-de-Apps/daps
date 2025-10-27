@@ -1,7 +1,10 @@
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
-import { getInterestedUsersForPet, startChatBetweenUsers } from '@/services/api'; // Ajuste o caminho
+import {
+  getInterestedUsersForPet,
+  startChatBetweenUsers,
+} from '@/services/api'; // Ajuste o caminho
 import { UserData } from '@/types'; // Ajuste o caminho
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,12 +20,12 @@ import {
 } from 'react-native';
 
 // Componente para renderizar cada item da lista
-const UserListItem = ({ user }: { user: UserData }) => {
+const UserListItem = ({ user, petId }: { user: UserData; petId: string }) => {
   const { user: currentUser } = useAuth();
   const router = useRouter();
 
   const handleIniciarChat = async () => {
-    await startChatBetweenUsers(currentUser?.uid!, user.uid);
+    await startChatBetweenUsers(currentUser?.uid!, user.uid, petId);
   };
 
   return (
@@ -45,7 +48,10 @@ const UserListItem = ({ user }: { user: UserData }) => {
         <TouchableOpacity style={[styles.botao, styles.recusarBotao]}>
           <Text>Recusar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.botao, styles.aceitarBotao]} onPress={handleIniciarChat}>
+        <TouchableOpacity
+          style={[styles.botao, styles.aceitarBotao]}
+          onPress={handleIniciarChat}
+        >
           <Text>Conversar</Text>
         </TouchableOpacity>
       </View>
@@ -118,7 +124,7 @@ export default function InterestedListScreen() {
       <FlatList
         data={interestedUsers}
         keyExtractor={(item) => item.uid!}
-        renderItem={({ item }) => <UserListItem user={item} />}
+        renderItem={({ item }) => <UserListItem user={item} petId={petId} />}
         contentContainerStyle={styles.listContainer}
       />
     );
