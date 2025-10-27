@@ -29,22 +29,21 @@ interface Message {
 }
 
 interface ChatScreenProps {
-  otherUserId: string;
+  chatKey: string
 }
 
-export default function ChatScreen({ otherUserId }: ChatScreenProps) {
+export default function ChatScreen({ chatKey }: ChatScreenProps) {
   const auth = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
 
   const userId = auth.user?.uid || null;
-  const chatId = [userId, otherUserId].sort().join('_');
 
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatKey) return;
 
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const messagesRef = collection(db, 'chats', chatKey, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(
@@ -62,13 +61,13 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
     );
 
     return () => unsubscribe();
-  }, [chatId]);
+  }, [chatKey]);
 
   const sendMessage = async () => {
-    if (newMessage.trim() === '' || !chatId || !userId) return;
+    if (newMessage.trim() === '' || !chatKey || !userId) return;
 
     try {
-      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+      await addDoc(collection(db, 'chats', chatKey, 'messages'), {
         text: newMessage,
         createdAt: Timestamp.now(),
         userId,

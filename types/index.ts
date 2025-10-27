@@ -72,6 +72,9 @@ export type Favorite = {
 };
 
 export type ChatMessage = {
+  chatKey: string;
+  petId: string;
+  petName: string;
   userId: string;
   name: string;
   nickname?: string;

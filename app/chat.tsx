@@ -1,6 +1,7 @@
 import ChatScreen from '@/components/Chat';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
+import { auth } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
@@ -8,7 +9,7 @@ import { TouchableOpacity } from 'react-native';
 export default function ChatPage() {
   const navigation = useNavigation();
   const params = useLocalSearchParams();
-  const { otherUserId, otherUserName } = params;
+  const { chatKey, otherUserName, petName } = params;
 
   return (
     <CustomSafeArea style={{ flex: 1, backgroundColor: '#589b9b' }}>
@@ -32,14 +33,14 @@ export default function ChatPage() {
           </TouchableOpacity>
         }
         containerStyle={{ backgroundColor: '#88c9bf' }}
-        title={otherUserName as string}
+        title={otherUserName as string + " - " + (petName as string)}
         titleStyle={{
           color: '#434343',
           alignSelf: 'flex-start',
           marginLeft: 20,
         }}
       />
-      <ChatScreen otherUserId={otherUserId as string} />
+      <ChatScreen chatKey={chatKey as string} />
     </CustomSafeArea>
   );
 }

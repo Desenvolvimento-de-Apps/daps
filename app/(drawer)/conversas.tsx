@@ -66,7 +66,7 @@ export default function ChatPage() {
           </TouchableOpacity>
         }
         containerStyle={{ backgroundColor: '#88c9bf' }}
-        title="Chat"
+        title="Chat com interessados"
         titleStyle={{
           color: '#434343',
           alignSelf: 'flex-start',
@@ -91,6 +91,7 @@ export default function ChatPage() {
                 <ChatPersonCard
                   userId={item.userId}
                   name={item.name}
+                  petName={item.petName}
                   nickname={item.nickname}
                   profileImageUrl={item.profileImageUrl}
                   lastMessage={item.lastMessage}
@@ -98,8 +99,9 @@ export default function ChatPage() {
                   onPress={() =>
                     // @ts-ignore
                     navigation.navigate('chat', {
-                      otherUserId: item.userId,
                       otherUserName: item.name,
+                      petName: item.petName,
+                      chatKey: item.chatKey,
                     })
                   }
                 />

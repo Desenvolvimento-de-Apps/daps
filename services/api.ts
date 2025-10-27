@@ -1,5 +1,5 @@
 import { auth, db, storage } from '@/firebaseConfig';
-import { Pet, PetDetails, PetFormData, UserData } from '@/types';
+import { ChatMessage, Pet, PetDetails, PetFormData, UserData } from '@/types';
 import { FirebaseError } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
@@ -504,8 +504,8 @@ export const removeInterestInPet = async (petId: string): Promise<void> => {
     throw new Error('Não foi possível remover seu interesse no pet.');
   }
 };
-// : Promise<ChatMessage[]>
-export const getUserChats = async (userId: string) => {
+
+export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
   try {
     const chatsCollectionRef = collection(db, 'chats');
     const userChatsQuery = query(
@@ -536,8 +536,14 @@ export const getUserChats = async (userId: string) => {
         ? otherSnap.data()
         : { nome: 'Desconhecido', nomeUsuario: 'desconhecido', image: '' };
 
+      const petRef = doc(db, 'pets', chatData.petId);
+      const petSnap = await getDoc(petRef);
+      const petData = petSnap.exists() ? petSnap.data() : { nome: 'Desconhecido' };
+
       return {
         chatKey: chatKey,
+        petId: chatData.petId,
+        petName: petData.nome,
         userId: otherUid,
         name: otherData.nome,
         nickname: otherData.nomeUsuario,
@@ -550,8 +556,6 @@ export const getUserChats = async (userId: string) => {
     });
 
     const chats = await Promise.all(chatPromises);
-
-    console.log('Chats fetched for user:', userId, chats);
 
     return chats;
   } catch (error) {
