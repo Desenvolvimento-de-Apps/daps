@@ -78,4 +78,4 @@ export type ChatMessage = {
   profileImageUrl: string;
   lastMessage: string;
   lastMessageTime: string;
-};
+}; 

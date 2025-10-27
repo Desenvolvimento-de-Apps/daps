@@ -1,8 +1,11 @@
-import { ChatPersonCardProps } from '@/components/ChatPersonCard';
 import { auth, db, storage } from '@/firebaseConfig';
 import { ChatMessage, Pet, PetDetails, PetFormData, UserData } from '@/types';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, updateProfile, UserCredential } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  UserCredential,
+} from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -432,7 +435,12 @@ export const getInterestedUsersForPet = async (
   petId: string,
 ): Promise<UserData[]> => {
   try {
-    const interestCollectionRef = collection(db, 'pets', petId, 'interestedUsers');
+    const interestCollectionRef = collection(
+      db,
+      'pets',
+      petId,
+      'interestedUsers',
+    );
     const querySnapshot = await getDocs(interestCollectionRef);
 
     if (querySnapshot.empty) {
@@ -496,6 +504,7 @@ export const removeInterestInPet = async (petId: string): Promise<void> => {
     throw new Error('Não foi possível remover seu interesse no pet.');
   }
 };
+
 export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
   try {
     const userChatsRef = collection(db, 'users', userId, 'chats');
@@ -505,34 +514,76 @@ export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
     if (chatKeys.length === 0) {
       return [];
     }
-    
+
     const chatPromises = chatKeys.map(async (chatKey) => {
       const messagesRef = collection(db, 'chat', chatKey, 'messages');
+
       const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
       const msgSnapshot = await getDocs(q);
       const lastMessage = msgSnapshot.empty ? null : msgSnapshot.docs[0].data();
 
       const participants = chatKey.split('_');
-      const otherUid = participants[0] === userId ? participants[1] : participants[0];
+      const otherUid =
+        participants[0] === userId ? participants[1] : participants[0];
       const otherUserRef = doc(db, 'users', otherUid);
       const otherSnap = await getDoc(otherUserRef);
-      const otherData = otherSnap.exists() ? otherSnap.data() : { name: 'Desconhecido', photoUrl: '' };
+      const otherData = otherSnap.exists()
+        ? otherSnap.data()
+        : { name: 'Desconhecido', photoUrl: '' };
 
-      return   {
+      return {
         userId: otherUid,
         name: otherData.nome,
         nickname: otherData.nomeUsuario,
-        profileImageUrl: otherData.imagem,
+        profileImageUrl: otherData.image,
         lastMessage: lastMessage ? lastMessage.text : null,
-        lastMessageTime: lastMessage ? lastMessage.createdAt.toDate().toISOString() : null,
+        lastMessageTime: lastMessage
+          ? lastMessage.createdAt.toDate().toISOString()
+          : null,
       };
     });
-    
+
     const chats = await Promise.all(chatPromises);
 
+    console.log('Chats fetched for user:', userId, chats);
+    
     return chats;
   } catch (error) {
     console.error('Erro ao buscar conversas do usuário:', error);
     throw new Error('Não foi possível buscar suas conversas.');
+  }
+};
+
+export const startChatBetweenUsers = async (
+  userId1: string,
+  userId2: string,
+): Promise<string> => {
+  try {
+    const chatKey = [userId1, userId2].sort().join('_');
+
+    const chatRef = doc(db, 'chat', chatKey);
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+      await setDoc(chatRef, {});
+    }
+
+    
+    const user1ChatRef = doc(db, 'users', userId1, 'chats', chatKey);
+    const user1ChatSnap = await getDoc(user1ChatRef);
+    if (!user1ChatSnap.exists()) {
+      await setDoc(user1ChatRef, { createdAt: serverTimestamp() });
+    }
+
+    const user2ChatRef = doc(db, 'users', userId2, 'chats', chatKey);
+    const user2ChatSnap = await getDoc(user2ChatRef);
+    if (!user2ChatSnap.exists()) {
+      await setDoc(user2ChatRef, { createdAt: serverTimestamp() });
+    }
+
+    return chatKey;
+  } catch (error) {
+    console.error('Erro ao iniciar conversa:', error);
+    throw new Error('Não foi possível iniciar a conversa.');
   }
 };

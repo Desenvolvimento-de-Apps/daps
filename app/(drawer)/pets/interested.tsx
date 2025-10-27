@@ -1,31 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { getInterestedUsersForPet } from '@/services/api'; // Ajuste o caminho
-import { UserData } from '@/types'; // Ajuste o caminho
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
+import { useAuth } from '@/contexts/AuthContext';
+import { getInterestedUsersForPet, startChatBetweenUsers } from '@/services/api'; // Ajuste o caminho
+import { UserData } from '@/types'; // Ajuste o caminho
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Componente para renderizar cada item da lista
 const UserListItem = ({ user }: { user: UserData }) => {
+  const { user: currentUser } = useAuth();
   const router = useRouter();
 
-  const handlePress = () => {
-    // Futuramente, pode navegar para o perfil do usuário ou iniciar um chat
-    alert(`Iniciar conversa com ${user.nome}`);
+  const handleIniciarChat = async () => {
+    await startChatBetweenUsers(currentUser?.uid!, user.uid);
   };
 
   return (
-    <TouchableOpacity style={styles.userItemContainer} onPress={handlePress}>
+    <View style={styles.userItemContainer}>
       {user.image ? (
         // Se o usuário TEM imagem, renderiza a imagem
         <Image source={{ uri: user.image }} style={styles.userImage} />
@@ -39,8 +40,16 @@ const UserListItem = ({ user }: { user: UserData }) => {
         <Text style={styles.userName}>{user.nome}</Text>
         <Text style={styles.userHandle}>@{user.nomeUsuario}</Text>
       </View>
-      <Feather name="chevron-right" size={24} color="#cccccc" />
-    </TouchableOpacity>
+
+      <View style={styles.botoesContainer}>
+        <TouchableOpacity style={[styles.botao, styles.recusarBotao]}>
+          <Text>Recusar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.botao, styles.aceitarBotao]} onPress={handleIniciarChat}>
+          <Text>Conversar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -183,6 +192,22 @@ const styles = StyleSheet.create({
   },
   placeholderIconContainer: {
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  botoesContainer: {
+    gap: 8,
+  },
+  botao: {
+    padding: 10,
+    borderRadius: 5,
+    marginLeft: 5,
+  },
+  aceitarBotao: {
+    backgroundColor: '#88C9BF',
+    alignItems: 'center',
+  },
+  recusarBotao: {
+    backgroundColor: '#F08080',
     alignItems: 'center',
   },
 });

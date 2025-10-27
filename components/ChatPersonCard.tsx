@@ -35,6 +35,8 @@ const formatDate = (dateString: string) => {
 };
 
 export default function ChatPersonCard(props: ChatPersonCardProps) {
+  console.log('Rendering ChatPersonCard for user:', props.userId);
+  console.log('Profile Image URL:', props.profileImageUrl);
   return (
     <TouchableOpacity style={styles.container} onPress={props.onPress}>
       <Image source={{ uri: props.profileImageUrl }} style={styles.userImage} />
