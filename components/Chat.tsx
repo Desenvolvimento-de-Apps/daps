@@ -101,15 +101,22 @@ export default function ChatScreen({ chatKey }: ChatScreenProps) {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={4}
     >
       <FlatList
         ref={flatListRef}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         style={styles.messageList}
-        contentContainerStyle={{ paddingBottom: 10 }}
+        contentContainerStyle={{
+          paddingBottom: Platform.OS === 'ios' ? 120 : 80,
+        }}
+        keyboardShouldPersistTaps="handled"
       />
       <View style={styles.inputContainer}>
         <TextInput
