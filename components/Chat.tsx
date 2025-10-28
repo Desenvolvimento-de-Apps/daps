@@ -9,7 +9,7 @@ import {
   query,
   Timestamp,
 } from 'firebase/firestore';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -34,12 +34,29 @@ interface ChatScreenProps {
 
 export default function ChatScreen({ chatKey }: ChatScreenProps) {
   const flatListRef = useRef<FlatList<Message>>(null);
+  const isUserNearBottom = useRef(true);
+
   const auth = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
 
   const userId = auth.user?.uid || null;
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 100;
+    const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    isUserNearBottom.current = isNearBottom;
+  }, []);
+
+  const handleContentSizeChange = useCallback(() => {
+    if (isUserNearBottom.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    }
+  }, []);
 
   useEffect(() => {
     if (!chatKey) return;
@@ -105,9 +122,8 @@ export default function ChatScreen({ chatKey }: ChatScreenProps) {
     >
       <FlatList
         ref={flatListRef}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        }
+        onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         data={messages}
         renderItem={renderMessage}
