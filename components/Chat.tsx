@@ -9,7 +9,7 @@ import {
   query,
   Timestamp,
 } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -29,10 +29,11 @@ interface Message {
 }
 
 interface ChatScreenProps {
-  chatKey: string
+  chatKey: string;
 }
 
 export default function ChatScreen({ chatKey }: ChatScreenProps) {
+  const flatListRef = useRef<FlatList<Message>>(null);
   const auth = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,6 +55,10 @@ export default function ChatScreen({ chatKey }: ChatScreenProps) {
           ...doc.data(),
         })) as Message[];
         setMessages(loadedMessages);
+
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 100);
       },
       (error) => {
         console.error('Erro ao carregar mensagens:', error);
@@ -98,6 +103,8 @@ export default function ChatScreen({ chatKey }: ChatScreenProps) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <FlatList
+        ref={flatListRef}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}

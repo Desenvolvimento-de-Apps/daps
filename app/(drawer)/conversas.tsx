@@ -9,13 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 
 export default function ChatPage() {
@@ -47,14 +41,6 @@ export default function ChatPage() {
     }, [fetchChats]),
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#88C9BF" />
-      </View>
-    );
-  }
-
   return (
     <CustomSafeArea style={styles.container}>
       <Header
@@ -82,8 +68,15 @@ export default function ChatPage() {
             keyExtractor={(item) => item.chatKey}
             ItemSeparatorComponent={() => <View style={{ height: 28 }} />}
             ListEmptyComponent={
-              <Text style={{ textAlign: 'center', marginTop: 20, paddingHorizontal: 20 }}>
-                Nenhuma conversa encontrada, inicie uma nova após aceitar a solicitação de adoção dos seus pets!
+              <Text
+                style={{
+                  textAlign: 'center',
+                  marginTop: 20,
+                  paddingHorizontal: 20,
+                }}
+              >
+                Nenhuma conversa encontrada, inicie uma nova após aceitar a
+                solicitação de adoção dos seus pets!
               </Text>
             }
             renderItem={({ item }) => {
