@@ -79,7 +79,7 @@ export default function ChatPage() {
           <FlatList
             style={styles.chatList}
             data={chats}
-            keyExtractor={(item) => item.userId.toString()}
+            keyExtractor={(item) => item.chatKey}
             ItemSeparatorComponent={() => <View style={{ height: 28 }} />}
             ListEmptyComponent={
               <Text style={{ textAlign: 'center', marginTop: 20, paddingHorizontal: 20 }}>
