@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase/firestore';
  * Define a estrutura de dados para o cadastro de um novo usuário.
  */
 export type UserData = {
+  uid: string;
   nome: string;
   idade: string;
   email: string;
@@ -15,6 +16,7 @@ export type UserData = {
   senha: string;
   confirmacaoSenha: string;
   pushToken?: string; // MODIFICAÇÃO: Campo adicionado
+  image: string | null;
 };
 
 // --- Tipos existentes de Pet (mantidos para consistência) ---
@@ -70,10 +72,13 @@ export type Favorite = {
 };
 
 export type ChatMessage = {
+  chatKey: string;
+  petId: string;
+  petName: string;
   userId: string;
   name: string;
   nickname?: string;
   profileImageUrl: string;
   lastMessage: string;
   lastMessageTime: string;
-};
+}; 

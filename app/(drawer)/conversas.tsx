@@ -9,13 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { DrawerActions } from '@react-navigation/native';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 
 export default function ChatPage() {
@@ -47,14 +41,6 @@ export default function ChatPage() {
     }, [fetchChats]),
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#88C9BF" />
-      </View>
-    );
-  }
-
   return (
     <CustomSafeArea style={styles.container}>
       <Header
@@ -66,7 +52,7 @@ export default function ChatPage() {
           </TouchableOpacity>
         }
         containerStyle={{ backgroundColor: '#88c9bf' }}
-        title="Chat"
+        title="Chat com interessados"
         titleStyle={{
           color: '#434343',
           alignSelf: 'flex-start',
@@ -79,11 +65,18 @@ export default function ChatPage() {
           <FlatList
             style={styles.chatList}
             data={chats}
-            keyExtractor={(item) => item.userId.toString()}
+            keyExtractor={(item) => item.chatKey}
             ItemSeparatorComponent={() => <View style={{ height: 28 }} />}
             ListEmptyComponent={
-              <Text style={{ textAlign: 'center', marginTop: 20, paddingHorizontal: 20 }}>
-                Nenhuma conversa encontrada, inicie uma nova após aceitar a solicitação de adoção dos seus pets!
+              <Text
+                style={{
+                  textAlign: 'center',
+                  marginTop: 20,
+                  paddingHorizontal: 20,
+                }}
+              >
+                Nenhuma conversa encontrada, inicie uma nova após aceitar a
+                solicitação de adoção dos seus pets!
               </Text>
             }
             renderItem={({ item }) => {
@@ -91,6 +84,7 @@ export default function ChatPage() {
                 <ChatPersonCard
                   userId={item.userId}
                   name={item.name}
+                  petName={item.petName}
                   nickname={item.nickname}
                   profileImageUrl={item.profileImageUrl}
                   lastMessage={item.lastMessage}
@@ -98,8 +92,9 @@ export default function ChatPage() {
                   onPress={() =>
                     // @ts-ignore
                     navigation.navigate('chat', {
-                      otherUserId: item.userId,
                       otherUserName: item.name,
+                      petName: item.petName,
+                      chatKey: item.chatKey,
                     })
                   }
                 />

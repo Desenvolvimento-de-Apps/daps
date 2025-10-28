@@ -2,6 +2,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface ChatPersonCardProps {
   userId: string;
+  petName: string;
   name: string;
   nickname?: string;
   profileImageUrl: string;
@@ -16,6 +17,8 @@ const formatText = (text: string, maxLength: number) => {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+
   const date = new Date(dateString);
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();
@@ -44,9 +47,7 @@ export default function ChatPersonCard(props: ChatPersonCardProps) {
             <Text numberOfLines={2} style={styles.name}>
               {props.name.toUpperCase()}
             </Text>
-            {/* {props.nickname && (
-              <Text style={styles.name}>|{props.nickname.toUpperCase()}</Text>
-            )} */}
+              <Text style={styles.name}>({props.petName})</Text>
           </View>
           <Text style={{ justifyContent: 'flex-end' }}>
             {props.lastMessageTime && formatDate(props.lastMessageTime)}
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   },
   nameContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 3,
     alignItems: 'center',
   },
   dataContainer: {

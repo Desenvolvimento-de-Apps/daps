@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,9 @@ import {
   isPetFavorited,
   addFavoritePet,
   removeFavoritePet,
+  markInterestInPet,
+  removeInterestInPet,
+  hasUserMarkedInterest,
 } from '@/services/api';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
@@ -33,10 +37,15 @@ export default function PetInfoScreen() {
   const router = useRouter();
   const { petId } = useLocalSearchParams<{ petId: string }>();
 
+  const user = auth.currentUser;
+
   const [pet, setPet] = useState<PetDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isCheckingFavorite, setIsCheckingFavorite] = useState(true);
+  const [hasMarkedInterest, setHasMarkedInterest] = useState(false);
+  const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   const [isApiFinished, setIsApiFinished] = useState(false);
   const [isImageRendered, setIsImageRendered] = useState(false);
@@ -59,11 +68,18 @@ export default function PetInfoScreen() {
           setIsImageRendered(true);
         }
 
-        // Verifica o status de favorito
-        const user = auth.currentUser;
         if (user) {
-          const favoritedStatus = await isPetFavorited(user.uid, petId);
-          setIsFavorited(favoritedStatus);
+          const isMyPet = petData?.ownerUid === user.uid;
+          setIsOwner(isMyPet);
+
+          // Se não for o dono, verifica se é favorito ou interessado
+          if (!isMyPet) {
+            const favoritedStatus = await isPetFavorited(user.uid, petId);
+            setIsFavorited(favoritedStatus);
+
+            const interestStatus = await hasUserMarkedInterest(user.uid, petId);
+            setHasMarkedInterest(interestStatus);
+          }
         }
       } catch (e) {
         setError('Não foi possível carregar os dados do pet.');
@@ -75,7 +91,7 @@ export default function PetInfoScreen() {
     };
 
     fetchPetDetails();
-  }, [petId]);
+  }, [petId, user]);
 
   const handleFavoriteToggle = async () => {
     const user = auth.currentUser;
@@ -103,6 +119,104 @@ export default function PetInfoScreen() {
     } catch (err) {
       console.error('Erro ao atualizar favorito:', err);
       Alert.alert('Erro', 'Não foi possível atualizar o status de favorito.');
+    }
+  };
+
+  const handleEditPet = () => {
+    // Navegue para a tela de edição, passando o ID do pet
+    Alert.alert('Funcionalidade Futura', 'Navegar para a tela de edição.');
+  };
+
+  const handleListInterested = () => {
+    // Navegue para a nova tela, passando o ID e o nome do pet
+    router.push({
+      pathname: '/(drawer)/pets/interested',
+      params: { petId: petId, petName: pet?.name },
+    });
+  };
+
+  const handleRemovePet = () => {
+    Alert.alert(
+      'Remover Pet',
+      'Tem certeza que deseja remover este pet? Esta ação não pode ser desfeita.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Chame a sua função da API para deletar o pet
+              // await deletePet(petId);
+              Alert.alert('Sucesso', '(Mas ainda não implementado)');
+              router.back(); // Volta para a tela anterior
+            } catch (err) {
+              console.error('Erro ao remover pet:', err);
+              Alert.alert('Erro', 'Não foi possível remover o pet.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleShare = async () => {
+    if (!pet) return; // Garante que temos os dados do pet
+
+    try {
+      const result = await Share.share({
+        message: `Olha que pet fofinho para adoção! Conheça o(a) ${pet.name}.`,
+        // Você pode adicionar uma URL para o seu app ou para o perfil do pet aqui
+        // url: `https://meuapp.com/pet/${petId}`,
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // compartilhado com o tipo de atividade result.activityType
+        } else {
+          // compartilhado
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dispensado
+      }
+    } catch (error: any) {
+      Alert.alert('Erro', error.message);
+    }
+  };
+
+  const handleInterestToggle = async () => {
+    const user = auth.currentUser;
+    if (!user || !petId) {
+      Alert.alert(
+        'Erro',
+        'Não foi possível completar a ação. Tente novamente.',
+      );
+      return;
+    }
+
+    setIsSubmittingInterest(true); // Inicia o loading
+
+    // Decide qual ação tomar com base no estado atual
+    const newInterestState = !hasMarkedInterest;
+
+    try {
+      if (newInterestState) {
+        // Se o novo estado é 'interessado', chama a função de adicionar
+        await markInterestInPet(petId);
+      } else {
+        // Se o novo estado é 'não interessado', chama a função de remover
+        await removeInterestInPet(petId);
+      }
+      // Atualiza o estado da UI apenas se a operação no banco for bem-sucedida
+      setHasMarkedInterest(newInterestState);
+    } catch (error) {
+      console.error('Erro ao alternar interesse:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar seu interesse.');
+    } finally {
+      setIsSubmittingInterest(false); // Finaliza o loading
     }
   };
 
@@ -141,13 +255,22 @@ export default function PetInfoScreen() {
                 <Feather name="arrow-left" size={24} color="#434343" />
               </TouchableOpacity>
             }
-            rightAction={null}
+            rightAction={
+              // Botão de compartilhar aparece para todos
+              <TouchableOpacity onPress={handleShare}>
+                <Feather name="share-2" size={24} color="#434343" />
+              </TouchableOpacity>
+            }
+            containerStyle={isOwner ? { backgroundColor: '#cfe9e5' } : {}}
           />
           <ScrollView>
             <View style={styles.imageContainer}>
               {pet.image.length > 0 ? (
                 <>
-                  <ImageCarousel containerStyle={styles.petImage} uris={pet.image} />
+                  <ImageCarousel
+                    containerStyle={styles.petImage}
+                    uris={pet.image}
+                  />
                 </>
               ) : (
                 <View style={[styles.petImage, styles.placeholderImage]}>
@@ -156,15 +279,19 @@ export default function PetInfoScreen() {
               )}
               <TouchableOpacity
                 style={styles.favoriteButton}
-                onPress={handleFavoriteToggle}
-                disabled={isCheckingFavorite}
+                onPress={isOwner ? handleEditPet : handleFavoriteToggle}
+                disabled={isCheckingFavorite && !isOwner}
               >
-                <Feather
-                  name="heart"
-                  size={24}
-                  color={isFavorited ? '#E91E63' : '#434343'}
-                  fill={isFavorited ? '#E91E63' : 'none'}
-                />
+                {isOwner ? (
+                  <Feather name="edit-2" size={24} color="#434343" />
+                ) : (
+                  <Feather
+                    name="heart"
+                    size={24}
+                    color={isFavorited ? '#E91E63' : '#434343'}
+                    fill={isFavorited ? '#E91E63' : 'none'}
+                  />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -265,12 +392,42 @@ export default function PetInfoScreen() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.adoptButton}
-              onPress={() => alert('Implementar chat!')}
-            >
-              <Text style={styles.adoptButtonText}>PRETENDO ADOTAR</Text>
-            </TouchableOpacity>
+            {isOwner ? (
+              <View style={styles.ownerActionsContainer}>
+                <TouchableOpacity
+                  style={styles.listButton}
+                  onPress={handleListInterested}
+                >
+                  <Text style={styles.listButtonText}>LISTAR INTERESSADOS</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={handleRemovePet}
+                >
+                  <Text style={styles.removeButtonText}>REMOVER PET</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.adoptButton,
+                  // Adiciona um estilo diferente se o interesse já foi marcado
+                  hasMarkedInterest && styles.adoptButtonActive,
+                ]}
+                onPress={handleInterestToggle}
+                disabled={isSubmittingInterest}
+              >
+                {isSubmittingInterest ? (
+                  <ActivityIndicator color="#434343" />
+                ) : (
+                  <Text style={styles.adoptButtonText}>
+                    {hasMarkedInterest
+                      ? 'NÃO TENHO MAIS INTERESSE'
+                      : 'PRETENDO ADOTAR'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </CustomSafeArea>
       )}
@@ -381,5 +538,38 @@ const styles = StyleSheet.create({
     color: '#434343',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  ownerActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+  },
+  listButton: {
+    flex: 1,
+    backgroundColor: '#88c9bf',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  listButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  removeButton: {
+    flex: 1,
+    backgroundColor: '#88c9bf',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  adoptButtonActive: {
+    backgroundColor: '#BDBDBD',
   },
 });

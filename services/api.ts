@@ -1,8 +1,11 @@
-import { ChatPersonCardProps } from '@/components/ChatPersonCard';
 import { auth, db, storage } from '@/firebaseConfig';
 import { ChatMessage, Pet, PetDetails, PetFormData, UserData } from '@/types';
 import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword, updateProfile, UserCredential } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  UserCredential,
+} from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -77,7 +80,7 @@ export const registerUser = async (
 
     await updateProfile(userCredential.user, {
       displayName: userData.nomeUsuario,
-      photoURL: userImageUrl
+      photoURL: userImageUrl,
     });
   } catch (error) {
     if (userCredential) {
@@ -377,43 +380,212 @@ export const updatePetVisibility = async (
   }
 };
 
+/**
+ * Busca os dados de um usuário específico pelo seu UID.
+ * @param userId O UID do usuário a ser buscado.
+ * @returns Os dados do usuário ou null se não for encontrado.
+ */
+export const getUserDataById = async (
+  userId: string,
+): Promise<UserData | null> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      return { uid: userDoc.id, ...userDoc.data() } as unknown as UserData;
+    } else {
+      console.warn(`Usuário com ID ${userId} não encontrado.`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error);
+    throw new Error('Não foi possível buscar os dados do usuário.');
+  }
+};
+
+/**
+ * Registra o interesse do usuário logado em um pet específico.
+ * @param petId O ID do pet no qual o usuário está interessado.
+ */
+export const markInterestInPet = async (petId: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Você precisa estar logado para demonstrar interesse.');
+  }
+
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', user.uid);
+    await setDoc(interestRef, {
+      userId: user.uid,
+      interestedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao marcar interesse:', error);
+    throw new Error('Não foi possível registrar seu interesse no pet.');
+  }
+};
+
+/**
+ * Busca todos os usuários que demonstraram interesse em um pet específico.
+ * @param petId O ID do pet.
+ * @returns Uma lista com os dados completos dos usuários interessados.
+ */
+export const getInterestedUsersForPet = async (
+  petId: string,
+): Promise<UserData[]> => {
+  try {
+    const interestCollectionRef = collection(
+      db,
+      'pets',
+      petId,
+      'interestedUsers',
+    );
+    const querySnapshot = await getDocs(interestCollectionRef);
+
+    if (querySnapshot.empty) {
+      return []; // Retorna um array vazio se ninguém demonstrou interesse
+    }
+
+    // Mapeia cada documento de interesse para uma promise que busca os dados do usuário
+    const userPromises = querySnapshot.docs.map((doc) => {
+      const userId = doc.data().userId;
+      return getUserDataById(userId);
+    });
+
+    // Aguarda todas as buscas de usuários terminarem
+    const users = await Promise.all(userPromises);
+
+    // Filtra resultados nulos (caso um usuário tenha sido deletado)
+    return users.filter((user): user is UserData => user !== null);
+  } catch (error) {
+    console.error('Erro ao buscar usuários interessados:', error);
+    throw new Error('Não foi possível buscar a lista de interessados.');
+  }
+};
+
+/**
+ * Verifica se um usuário já marcou interesse em um pet.
+ * @param userId O UID do usuário.
+ * @param petId O ID do pet.
+ * @returns `true` se o interesse já foi marcado, `false` caso contrário.
+ */
+export const hasUserMarkedInterest = async (
+  userId: string,
+  petId: string,
+): Promise<boolean> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    const docSnap = await getDoc(interestRef);
+    return docSnap.exists();
+  } catch (error) {
+    console.error('Erro ao verificar interesse:', error);
+    return false;
+  }
+};
+
+/**
+ * Remove o interesse do usuário logado em um pet específico.
+ * @param petId O ID do pet do qual o interesse será removido.
+ */
+export const removeInterestInPet = async (petId: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Você precisa estar logado para realizar esta ação.');
+  }
+
+  try {
+    // A referência aponta para o documento exato do interesse do usuário
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', user.uid);
+    // Deleta o documento, efetivamente removendo o interesse
+    await deleteDoc(interestRef);
+  } catch (error) {
+    console.error('Erro ao remover interesse:', error);
+    throw new Error('Não foi possível remover seu interesse no pet.');
+  }
+};
+
 export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
   try {
-    const userChatsRef = collection(db, 'users', userId, 'chats');
-    const userChatsSnap = await getDocs(userChatsRef);
-    const chatKeys = userChatsSnap.docs.map((doc) => doc.id);
+    const chatsCollectionRef = collection(db, 'chats');
+    const userChatsQuery = query(
+      chatsCollectionRef,
+      where('participants', 'array-contains', userId),
+    );
+    const userChatsSnap = await getDocs(userChatsQuery);
 
-    if (chatKeys.length === 0) {
+    if (userChatsSnap.empty) {
+      console.log('Nenhuma conversa encontrada para o usuário:', userId);
       return [];
     }
-    
-    const chatPromises = chatKeys.map(async (chatKey) => {
-      const messagesRef = collection(db, 'chat', chatKey, 'messages');
+
+    const chatPromises = userChatsSnap.docs.map(async (chatDoc) => {
+      const chatKey = chatDoc.id;
+      const chatData = chatDoc.data();
+      const participants = chatData.participants as string[];
+
+      const otherUid = participants.find((uid) => uid !== userId) || 'unknown';
+      const messagesRef = collection(db, 'chats', chatKey, 'messages');
       const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
       const msgSnapshot = await getDocs(q);
       const lastMessage = msgSnapshot.empty ? null : msgSnapshot.docs[0].data();
 
-      const participants = chatKey.split('_');
-      const otherUid = participants[0] === userId ? participants[1] : participants[0];
       const otherUserRef = doc(db, 'users', otherUid);
       const otherSnap = await getDoc(otherUserRef);
-      const otherData = otherSnap.exists() ? otherSnap.data() : { name: 'Desconhecido', photoUrl: '' };
+      const otherData = otherSnap.exists()
+        ? otherSnap.data()
+        : { nome: 'Desconhecido', nomeUsuario: 'desconhecido', image: '' };
 
-      return   {
+      const petRef = doc(db, 'pets', chatData.petId);
+      const petSnap = await getDoc(petRef);
+      const petData = petSnap.exists() ? petSnap.data() : { nome: 'Desconhecido' };
+
+      return {
+        chatKey: chatKey,
+        petId: chatData.petId,
+        petName: petData.nome,
         userId: otherUid,
         name: otherData.nome,
         nickname: otherData.nomeUsuario,
-        profileImageUrl: otherData.imagem,
+        profileImageUrl: otherData.image,
         lastMessage: lastMessage ? lastMessage.text : null,
-        lastMessageTime: lastMessage ? lastMessage.createdAt.toDate().toISOString() : null,
+        lastMessageTime: lastMessage
+          ? lastMessage.createdAt.toDate().toISOString()
+          : null,
       };
     });
-    
+
     const chats = await Promise.all(chatPromises);
 
     return chats;
   } catch (error) {
     console.error('Erro ao buscar conversas do usuário:', error);
     throw new Error('Não foi possível buscar suas conversas.');
+  }
+};
+
+export const startChatBetweenUsers = async (
+  userId1: string,
+  userId2: string,
+  petId: string,
+): Promise<string> => {
+  try {
+    const chatKey = [userId1, userId2].sort().join('_') + '_' + petId;
+
+    const chatRef = doc(db, 'chats', chatKey);
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+      await setDoc(chatRef, {
+        participants: [userId1, userId2],
+        petId: petId,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    return chatKey;
+  } catch (error) {
+    console.error('Erro ao iniciar conversa:', error);
+    throw new Error('Não foi possível iniciar a conversa.');
   }
 };

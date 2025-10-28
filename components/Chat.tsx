@@ -1,3 +1,5 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebaseConfig';
 import { Feather } from '@expo/vector-icons';
 import {
   addDoc,
@@ -7,7 +9,7 @@ import {
   query,
   Timestamp,
 } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -18,8 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { auth, db } from '@/firebaseConfig';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -29,22 +29,39 @@ interface Message {
 }
 
 interface ChatScreenProps {
-  otherUserId: string;
+  chatKey: string;
 }
 
-export default function ChatScreen({ otherUserId }: ChatScreenProps) {
+export default function ChatScreen({ chatKey }: ChatScreenProps) {
+  const flatListRef = useRef<FlatList<Message>>(null);
+  const isUserNearBottom = useRef(true);
+
   const auth = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
 
   const userId = auth.user?.uid || null;
-  const chatId = [userId, otherUserId].sort().join('_');
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 100;
+    const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    isUserNearBottom.current = isNearBottom;
+  }, []);
+
+  const handleContentSizeChange = useCallback(() => {
+    if (isUserNearBottom.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatKey) return;
 
-    const messagesRef = collection(db, 'chat', chatId, 'messages');
+    const messagesRef = collection(db, 'chats', chatKey, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(
@@ -55,6 +72,10 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           ...doc.data(),
         })) as Message[];
         setMessages(loadedMessages);
+
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 100);
       },
       (error) => {
         console.error('Erro ao carregar mensagens:', error);
@@ -62,13 +83,13 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
     );
 
     return () => unsubscribe();
-  }, [chatId]);
+  }, [chatKey]);
 
   const sendMessage = async () => {
-    if (newMessage.trim() === '' || !chatId || !userId) return;
+    if (newMessage.trim() === '' || !chatKey || !userId) return;
 
     try {
-      await addDoc(collection(db, 'chat', chatId, 'messages'), {
+      await addDoc(collection(db, 'chats', chatKey, 'messages'), {
         text: newMessage,
         createdAt: Timestamp.now(),
         userId,
@@ -97,13 +118,21 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={4}
     >
       <FlatList
+        ref={flatListRef}
+        onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         style={styles.messageList}
-        contentContainerStyle={{ paddingBottom: 10 }}
+        contentContainerStyle={{
+          paddingBottom: Platform.OS === 'ios' ? 120 : 80,
+        }}
+        keyboardShouldPersistTaps="handled"
       />
       <View style={styles.inputContainer}>
         <TextInput
@@ -113,7 +142,10 @@ export default function ChatScreen({ otherUserId }: ChatScreenProps) {
           placeholder="Digite sua mensagem..."
           placeholderTextColor="#666"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage()}>
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={() => sendMessage()}
+        >
           <Feather name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
