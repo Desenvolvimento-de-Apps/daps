@@ -35,25 +35,38 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // --- MODIFICAÇÃO: Listener para interação com notificações ---
   useEffect(() => {
-    // Este listener é acionado quando o usuário toca em uma notificação
-    // (seja com o app aberto, em segundo plano ou fechado)
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        // Extrai dados da notificação, como o ID do pet que enviamos da Cloud Function
-        const petId = response.notification.request.content.data
-          ?.petId as string;
+        const data = response.notification.request.content.data;
+        const petId = data?.petId as string;
+        const petName = data?.petName as string;
+        const type = data?.type as string;
 
-        // Navega para a tela de informações do pet
-        if (petId) {
-          console.log('Notificação recebida, navegando para o pet:', petId);
-          router.push({ pathname: '/(drawer)/pets/info', params: { petId } });
+        if (!petId) {
+          console.log('Notificação recebida sem petId.');
+          return;
+        }
+
+        if (type === 'NEW_INTEREST') {
+          console.log(
+            'Notificação de INTERESSE recebida, navegando para a lista:',
+            petId,
+          );
+          router.push({
+            pathname: '/(drawer)/pets/interested',
+            params: { petId, petName: petName || 'Pet' }, //
+          });
+        } else {
+          console.log(
+            'Notificação PADRÃO recebida, navegando para o pet:',
+            petId,
+          );
+          router.push({ pathname: '/(drawer)/pets/info', params: { petId } }); //
         }
       },
     );
 
-    // Limpa o listener quando o componente é desmontado
     return () => subscription.remove();
   }, []);
   // -----------------------------------------------------------
