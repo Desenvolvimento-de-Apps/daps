@@ -45,9 +45,9 @@ export default function ChatPersonCard(props: ChatPersonCardProps) {
         <View style={styles.dataContainer}>
           <View style={styles.nameContainer}>
             <Text numberOfLines={2} style={styles.name}>
-              {props.name.toUpperCase()}
+              {props.name?.toUpperCase()}
             </Text>
-              <Text style={styles.name}>({props.petName})</Text>
+            <Text style={styles.name}>({props.petName})</Text>
           </View>
           <Text style={{ justifyContent: 'flex-end' }}>
             {props.lastMessageTime && formatDate(props.lastMessageTime)}

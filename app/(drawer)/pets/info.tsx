@@ -269,7 +269,7 @@ export default function PetInfoScreen() {
                 <>
                   <ImageCarousel
                     containerStyle={styles.petImage}
-                    uris={pet.image}
+                    uris={Array.isArray(pet.image) ? pet.image : [pet.image]}
                   />
                 </>
               ) : (
