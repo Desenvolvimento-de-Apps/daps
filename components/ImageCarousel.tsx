@@ -52,7 +52,7 @@ export default function ImageCarousel({
         ref={flatListRef}
         data={uris}
         renderItem={renderItem}
-        keyExtractor={(item) => item}
+        keyExtractor={(item, index) => `${item}-${index}`}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingHorizontal: SPACING,
   },
-imageWrapper: {
+  imageWrapper: {
     width: ITEM_WIDTH,
     height: '100%',
     marginRight: SPACING * 2,

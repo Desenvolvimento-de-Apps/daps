@@ -19,6 +19,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  runTransaction,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Alert } from 'react-native';
@@ -538,7 +539,9 @@ export const getUserChats = async (userId: string): Promise<ChatMessage[]> => {
 
       const petRef = doc(db, 'pets', chatData.petId);
       const petSnap = await getDoc(petRef);
-      const petData = petSnap.exists() ? petSnap.data() : { nome: 'Desconhecido' };
+      const petData = petSnap.exists()
+        ? petSnap.data()
+        : { nome: 'Desconhecido' };
 
       return {
         chatKey: chatKey,
@@ -587,5 +590,99 @@ export const startChatBetweenUsers = async (
   } catch (error) {
     console.error('Erro ao iniciar conversa:', error);
     throw new Error('Não foi possível iniciar a conversa.');
+  }
+};
+
+/**
+ * Realiza a adoção de um pet, transferindo a propriedade para um novo usuário.
+ * Utiliza transação para garantir consistência de dados.
+ *
+ * @param petId O ID do pet sendo adotado.
+ * @param newOwnerUid O UID do usuário que vai adotar o pet.
+ */
+export const adoptPet = async (
+  petId: string,
+  newOwnerUid: string,
+): Promise<void> => {
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error('Você precisa estar logado para realizar a doação.');
+  }
+
+  const petRef = doc(db, 'pets', petId);
+  const newOwnerRef = doc(db, 'users', newOwnerUid);
+  const interestedCollectionRef = collection(
+    db,
+    'pets',
+    petId,
+    'interestedUsers',
+  );
+
+  try {
+    const interestedSnapshot = await getDocs(interestedCollectionRef);
+
+    await runTransaction(db, async (transaction) => {
+      const petDoc = await transaction.get(petRef);
+      const newOwnerDoc = await transaction.get(newOwnerRef);
+
+      if (!petDoc.exists()) {
+        throw new Error('Pet não encontrado.');
+      }
+
+      if (!newOwnerDoc.exists()) {
+        throw new Error('O usuário adotante não foi encontrado.');
+      }
+
+      const petData = petDoc.data();
+
+      // Só o dono atual pode transferir
+      if (petData.ownerUid !== currentUser.uid) {
+        throw new Error('Você não tem permissão para doar este pet.');
+      }
+
+      // nova localização baseada no novo dono
+      const newOwnerData = newOwnerDoc.data();
+      let newLocation = 'Localização não informada';
+      if (newOwnerData.cidade && newOwnerData.estado) {
+        newLocation = `${newOwnerData.cidade.toUpperCase()} - ${newOwnerData.estado.toUpperCase()}`;
+      }
+
+      transaction.update(petRef, {
+        ownerUid: newOwnerUid, // Muda o dono
+        location: newLocation, // Atualiza a cidade para a do novo dono
+        isVisible: false, // Remove da lista de adoção
+        updatedAt: serverTimestamp(),
+      });
+
+      // Deletar todos os interessados
+      interestedSnapshot.forEach((doc) => {
+        transaction.delete(doc.ref);
+      });
+    });
+
+    console.log(`Pet ${petId} adotado com sucesso por ${newOwnerUid}`);
+  } catch (error) {
+    console.error('Erro na transação de adoção:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove o interesse de um usuário específico em um pet.
+ * Usado pelo dono do pet para recusar um interessado.
+ * @param petId O ID do pet.
+ * @param userId O UID do usuário a ser removido da lista.
+ */
+export const removeInterestForUser = async (
+  petId: string,
+  userId: string,
+): Promise<void> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    await deleteDoc(interestRef);
+  } catch (error) {
+    console.error('Erro ao remover interesse do usuário:', error);
+    throw new Error('Não foi possível remover o interessado.');
   }
 };

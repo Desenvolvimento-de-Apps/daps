@@ -3,14 +3,16 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getInterestedUsersForPet,
+  removeInterestForUser,
   startChatBetweenUsers,
-} from '@/services/api'; // Ajuste o caminho
-import { UserData } from '@/types'; // Ajuste o caminho
+} from '@/services/api';
+import { UserData } from '@/types';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   StyleSheet,
@@ -19,22 +21,64 @@ import {
   View,
 } from 'react-native';
 
-// Componente para renderizar cada item da lista
-const UserListItem = ({ user, petId }: { user: UserData; petId: string }) => {
+interface UserListItemProps {
+  user: UserData;
+  petId: string;
+  petName: string;
+  onRemove: (userId: string) => void;
+}
+
+const UserListItem = ({
+  user,
+  petId,
+  petName,
+  onRemove,
+}: UserListItemProps) => {
   const { user: currentUser } = useAuth();
   const router = useRouter();
 
   const handleIniciarChat = async () => {
-    await startChatBetweenUsers(currentUser?.uid!, user.uid, petId);
+    try {
+      const chatKey = await startChatBetweenUsers(
+        currentUser?.uid!,
+        user.uid,
+        petId,
+      );
+
+      router.push({
+        pathname: '/chat',
+        params: {
+          chatKey: chatKey,
+          otherUserName: user.nome,
+          petName: petName,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Erro', 'Não foi possível iniciar o chat.');
+    }
+  };
+
+  const handleRecusar = () => {
+    Alert.alert(
+      'Recusar Interessado',
+      `Tem certeza que deseja remover ${user.nome} da lista de interessados?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => onRemove(user.uid),
+        },
+      ],
+    );
   };
 
   return (
     <View style={styles.userItemContainer}>
       {user.image ? (
-        // Se o usuário TEM imagem, renderiza a imagem
         <Image source={{ uri: user.image }} style={styles.userImage} />
       ) : (
-        // Se NÃO TEM imagem, renderiza um ícone dentro de uma View
         <View style={[styles.userImage, styles.placeholderIconContainer]}>
           <Ionicons name="person" size={30} color="#a0a0a0" />
         </View>
@@ -45,14 +89,17 @@ const UserListItem = ({ user, petId }: { user: UserData; petId: string }) => {
       </View>
 
       <View style={styles.botoesContainer}>
-        <TouchableOpacity style={[styles.botao, styles.recusarBotao]}>
-          <Text>Recusar</Text>
+        <TouchableOpacity
+          style={[styles.botao, styles.recusarBotao]}
+          onPress={handleRecusar}
+        >
+          <Text style={styles.botaoText}>Recusar</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.botao, styles.aceitarBotao]}
           onPress={handleIniciarChat}
         >
-          <Text>Conversar</Text>
+          <Text style={styles.botaoText}>Conversar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -92,6 +139,17 @@ export default function InterestedListScreen() {
     fetchUsers();
   }, [petId]);
 
+  const handleRemoveUser = async (userIdToRemove: string) => {
+    try {
+      await removeInterestForUser(petId, userIdToRemove);
+      setInterestedUsers((prevUsers) =>
+        prevUsers.filter((u) => u.uid !== userIdToRemove),
+      );
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível remover o interessado.');
+    }
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -124,7 +182,14 @@ export default function InterestedListScreen() {
       <FlatList
         data={interestedUsers}
         keyExtractor={(item) => item.uid!}
-        renderItem={({ item }) => <UserListItem user={item} petId={petId} />}
+        renderItem={({ item }) => (
+          <UserListItem
+            user={item}
+            petId={petId}
+            petName={petName || 'Pet'}
+            onRemove={handleRemoveUser}
+          />
+        )}
         contentContainerStyle={styles.listContainer}
       />
     );
@@ -204,16 +269,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   botao: {
-    padding: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 5,
     marginLeft: 5,
+    minWidth: 80,
+    alignItems: 'center',
   },
   aceitarBotao: {
     backgroundColor: '#88C9BF',
-    alignItems: 'center',
   },
   recusarBotao: {
     backgroundColor: '#F08080',
-    alignItems: 'center',
+  },
+  botaoText: {
+    fontSize: 12,
+    color: '#434343',
+    fontWeight: '500',
   },
 });
