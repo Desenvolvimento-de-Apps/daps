@@ -290,7 +290,7 @@ export default function PetInfoScreen() {
               <View style={{ flexDirection: 'row', gap: 8, marginRight: 16 }}>
                 {isOwner && (
                   <TouchableOpacity onPress={handleListBlockedUser}>
-                    <Feather name="delete" size={24} color="#434343" />
+                    <Feather name="shield-off" size={24} color="#434343" />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={handleShare}>
