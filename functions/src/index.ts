@@ -219,3 +219,62 @@ export const sendNotificationOnStatusChange = functions
     }
     return null;
   });
+
+/**
+ * Cloud Function acionada quando um pet é atualizado.
+ * Verifica se houve troca de dono (adoção) e notifica o novo tutor.
+ */
+export const sendNotificationOnAdoptionSuccess = functions
+  .region('southamerica-east1')
+  .firestore.document('pets/{petId}')
+  .onUpdate(async (change, context) => {
+    const oldData = change.before.data();
+    const newData = change.after.data();
+    const { petId } = context.params;
+
+    // 1. Verifica se o campo ownerUid mudou (indica adoção/transferência)
+    if (oldData.ownerUid === newData.ownerUid) {
+      return null;
+    }
+
+    console.log(`Pet ${petId} foi adotado! Novo dono: ${newData.ownerUid}`);
+
+    try {
+      const newOwnerUid = newData.ownerUid;
+      const petName = newData.nome || 'o pet';
+
+      // 2. Buscar o token de notificação do NOVO dono
+      const userRef = admin.firestore().doc(`users/${newOwnerUid}`);
+      const userSnap = await userRef.get();
+
+      if (!userSnap.exists) {
+        console.log('Novo dono não encontrado no banco.');
+        return null;
+      }
+
+      const userData = userSnap.data();
+      const pushToken = userData?.pushToken;
+
+      if (!pushToken || !Expo.isExpoPushToken(pushToken)) {
+        console.log('Novo dono sem token de notificação válido.');
+        return null;
+      }
+
+      // 3. Criar a mensagem de parabéns
+      const message: ExpoPushMessage = {
+        to: pushToken,
+        sound: 'default',
+        title: 'Parabéns pela adoção! 🎉',
+        body: `A adoção do(a) ${petName} foi confirmada! Cuide bem do seu novo amigo.`,
+        data: { petId: petId, type: 'ADOPTION_SUCCESS' },
+      };
+
+      // 4. Enviar a notificação
+      await expo.sendPushNotificationsAsync([message]);
+      console.log('Notificação de sucesso de adoção enviada.');
+    } catch (error) {
+      console.error('Erro ao enviar notificação de adoção:', error);
+    }
+
+    return null;
+  });
