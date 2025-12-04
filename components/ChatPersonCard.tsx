@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface ChatPersonCardProps {
@@ -40,7 +41,16 @@ const formatDate = (dateString: string) => {
 export default function ChatPersonCard(props: ChatPersonCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={props.onPress}>
-      <Image source={{ uri: props.profileImageUrl }} style={styles.userImage} />
+      {props.profileImageUrl ? (
+        <Image
+          source={{ uri: props.profileImageUrl }}
+          style={styles.userImage}
+        />
+      ) : (
+        <View style={[styles.userImage, styles.placeholderIconContainer]}>
+          <Ionicons name="person" size={30} color="#a0a0a0" />
+        </View>
+      )}
       <View>
         <View style={styles.dataContainer}>
           <View style={styles.nameContainer}>
@@ -91,6 +101,10 @@ const styles = StyleSheet.create({
     width: '90%',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  placeholderIconContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
 });

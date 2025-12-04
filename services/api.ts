@@ -449,6 +449,19 @@ export const rejectInterestedUser = async (
   }
 };
 
+export const unblockUserForPet = async (
+  petId: string,
+  userId: string,
+): Promise<void> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    await deleteDoc(interestRef);
+  } catch (error) {
+    console.error('Erro ao rejeitar usuário:', error);
+    throw new Error('Não foi possível rejeitar o interessado.');
+  }
+};
+
 /**
  * Busca todos os usuários que demonstraram interesse em um pet específico.
  * @param petId O ID do pet.
@@ -473,6 +486,45 @@ export const getInterestedUsersForPet = async (
     // Filtramos apenas os que NÃO estão rejeitados
     const activeDocs = querySnapshot.docs.filter(
       (doc) => doc.data().status !== 'rejected',
+    );
+
+    const userPromises = activeDocs.map((doc) => {
+      const userId = doc.data().userId;
+      return getUserDataById(userId);
+    });
+
+    const users = await Promise.all(userPromises);
+    return users.filter((user): user is UserData => user !== null);
+  } catch (error) {
+    console.error('Erro ao buscar usuários interessados:', error);
+    throw new Error('Não foi possível buscar a lista de interessados.');
+  }
+};
+
+/**
+ * Busca todos os usuários que demonstraram interesse em um pet específico.
+ * @param petId O ID do pet.
+ * @returns Uma lista com os dados completos dos usuários interessados.
+ */
+export const getBlockedUsersForPet = async (
+  petId: string,
+): Promise<UserData[]> => {
+  try {
+    const interestCollectionRef = collection(
+      db,
+      'pets',
+      petId,
+      'interestedUsers',
+    );
+    const querySnapshot = await getDocs(interestCollectionRef);
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    // Filtramos apenas os que NÃO estão rejeitados
+    const activeDocs = querySnapshot.docs.filter(
+      (doc) => doc.data().status == 'rejected',
     );
 
     const userPromises = activeDocs.map((doc) => {

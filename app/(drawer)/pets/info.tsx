@@ -1,32 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Dimensions,
-  Alert,
-  Share,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { PetDetails } from '@/types';
-import {
-  getPetById,
-  isPetFavorited,
-  addFavoritePet,
-  removeFavoritePet,
-  markInterestInPet,
-  removeInterestInPet,
-  hasUserMarkedInterest,
-  checkInterestStatus,
-} from '@/services/api';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
-import { auth } from '@/firebaseConfig';
 import ImageCarousel from '@/components/ImageCarousel';
+import { auth } from '@/firebaseConfig';
+import {
+  addFavoritePet,
+  checkInterestStatus,
+  getPetById,
+  isPetFavorited,
+  markInterestInPet,
+  removeFavoritePet,
+  removeInterestInPet,
+} from '@/services/api';
+import { PetDetails } from '@/types';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const formatArrayAsCommaSeparatedString = (arr: string[] | null) => {
   if (!arr || arr.length === 0) return null;
@@ -134,6 +133,13 @@ export default function PetInfoScreen() {
     // Navegue para a nova tela, passando o ID e o nome do pet
     router.push({
       pathname: '/(drawer)/pets/interested',
+      params: { petId: petId, petName: pet?.name },
+    });
+  };
+
+  const handleListBlockedUser = () => {
+    router.push({
+      pathname: '/(drawer)/pets/blocked-users',
       params: { petId: petId, petName: pet?.name },
     });
   };
@@ -281,9 +287,16 @@ export default function PetInfoScreen() {
             }
             rightAction={
               // Botão de compartilhar aparece para todos
-              <TouchableOpacity onPress={handleShare}>
-                <Feather name="share-2" size={24} color="#434343" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8, marginRight: 16 }}>
+                {isOwner && (
+                  <TouchableOpacity onPress={handleListBlockedUser}>
+                    <Feather name="delete" size={24} color="#434343" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={handleShare}>
+                  <Feather name="share-2" size={24} color="#434343" />
+                </TouchableOpacity>
+              </View>
             }
             containerStyle={isOwner ? { backgroundColor: '#cfe9e5' } : {}}
           />
