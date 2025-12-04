@@ -170,3 +170,52 @@ export const sendNotificationOnNewInterest = functions
       };
     }
   });
+
+/**
+ * Cloud Function acionada quando o status de um interessado é atualizado (ex: rejeitado).
+ */
+export const sendNotificationOnStatusChange = functions
+  .region('southamerica-east1')
+  .firestore.document('pets/{petId}/interestedUsers/{userId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const { petId, userId } = context.params;
+
+    // Verifica se o status mudou para 'rejected'
+    if (newData.status === 'rejected' && oldData.status !== 'rejected') {
+      console.log(`Usuário ${userId} foi recusado no pet ${petId}`);
+
+      try {
+        // 1. Buscar dados do pet para o nome
+        const petRef = admin.firestore().doc(`pets/${petId}`);
+        const petSnap = await petRef.get();
+        const petName = petSnap.exists ? petSnap.data()?.nome || 'Pet' : 'Pet';
+
+        // 2. Buscar token do usuário recusado
+        const userRef = admin.firestore().doc(`users/${userId}`);
+        const userSnap = await userRef.get();
+        const userToken = userSnap.data()?.pushToken;
+
+        if (!userToken || !Expo.isExpoPushToken(userToken)) {
+          console.log('Usuário recusado sem token válido.');
+          return null;
+        }
+
+        // 3. Enviar notificação
+        const message: ExpoPushMessage = {
+          to: userToken,
+          sound: 'default',
+          title: 'Atualização sobre sua adoção 😔',
+          body: `O dono do(a) ${petName} decidiu não seguir com o processo de adoção neste momento.`,
+          data: { petId: petId, type: 'STATUS_UPDATE', status: 'rejected' },
+        };
+
+        await expo.sendPushNotificationsAsync([message]);
+        console.log('Notificação de recusa enviada.');
+      } catch (error) {
+        console.error('Erro ao enviar notificação de recusa:', error);
+      }
+    }
+    return null;
+  });

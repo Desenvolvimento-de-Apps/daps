@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
@@ -22,6 +21,7 @@ import {
   markInterestInPet,
   removeInterestInPet,
   hasUserMarkedInterest,
+  checkInterestStatus,
 } from '@/services/api';
 import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
@@ -43,7 +43,9 @@ export default function PetInfoScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isCheckingFavorite, setIsCheckingFavorite] = useState(true);
-  const [hasMarkedInterest, setHasMarkedInterest] = useState(false);
+  const [interestStatus, setInterestStatus] = useState<
+    'none' | 'pending' | 'rejected'
+  >('none');
   const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
@@ -77,8 +79,9 @@ export default function PetInfoScreen() {
             const favoritedStatus = await isPetFavorited(user.uid, petId);
             setIsFavorited(favoritedStatus);
 
-            const interestStatus = await hasUserMarkedInterest(user.uid, petId);
-            setHasMarkedInterest(interestStatus);
+            // NOVA VERIFICAÇÃO DE STATUS
+            const status = await checkInterestStatus(user.uid, petId);
+            setInterestStatus(status);
           }
         }
       } catch (e) {
@@ -199,19 +202,16 @@ export default function PetInfoScreen() {
 
     setIsSubmittingInterest(true); // Inicia o loading
 
-    // Decide qual ação tomar com base no estado atual
-    const newInterestState = !hasMarkedInterest;
-
     try {
-      if (newInterestState) {
-        // Se o novo estado é 'interessado', chama a função de adicionar
-        await markInterestInPet(petId);
-      } else {
-        // Se o novo estado é 'não interessado', chama a função de remover
+      if (interestStatus === 'pending') {
+        // Remover interesse (apenas se estiver pendente)
         await removeInterestInPet(petId);
+        setInterestStatus('none');
+      } else if (interestStatus === 'none') {
+        // Adicionar interesse
+        await markInterestInPet(petId);
+        setInterestStatus('pending');
       }
-      // Atualiza o estado da UI apenas se a operação no banco for bem-sucedida
-      setHasMarkedInterest(newInterestState);
     } catch (error) {
       console.error('Erro ao alternar interesse:', error);
       Alert.alert('Erro', 'Não foi possível atualizar seu interesse.');
@@ -235,6 +235,30 @@ export default function PetInfoScreen() {
       </CustomSafeArea>
     );
   }
+
+  const getButtonConfig = () => {
+    if (interestStatus === 'rejected') {
+      return {
+        text: 'RECUSADO PELO DONO',
+        style: { backgroundColor: '#FF6B6B', opacity: 0.8 },
+        disabled: true,
+      };
+    }
+    if (interestStatus === 'pending') {
+      return {
+        text: 'REMOVER INTERESSE',
+        style: { backgroundColor: '#BDBDBD' },
+        disabled: false,
+      };
+    }
+    return {
+      text: 'PRETENDO ADOTAR',
+      style: styles.adoptButton,
+      disabled: false,
+    };
+  };
+
+  const buttonConfig = getButtonConfig();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -409,21 +433,15 @@ export default function PetInfoScreen() {
               </View>
             ) : (
               <TouchableOpacity
-                style={[
-                  styles.adoptButton,
-                  // Adiciona um estilo diferente se o interesse já foi marcado
-                  hasMarkedInterest && styles.adoptButtonActive,
-                ]}
+                style={[styles.adoptButton, buttonConfig.style]}
                 onPress={handleInterestToggle}
-                disabled={isSubmittingInterest}
+                disabled={isSubmittingInterest || buttonConfig.disabled}
               >
                 {isSubmittingInterest ? (
                   <ActivityIndicator color="#434343" />
                 ) : (
                   <Text style={styles.adoptButtonText}>
-                    {hasMarkedInterest
-                      ? 'NÃO TENHO MAIS INTERESSE'
-                      : 'PRETENDO ADOTAR'}
+                    {buttonConfig.text}
                   </Text>
                 )}
               </TouchableOpacity>

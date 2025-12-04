@@ -417,13 +417,35 @@ export const markInterestInPet = async (petId: string): Promise<void> => {
 
   try {
     const interestRef = doc(db, 'pets', petId, 'interestedUsers', user.uid);
-    await setDoc(interestRef, {
-      userId: user.uid,
-      interestedAt: serverTimestamp(),
-    });
+
+    await setDoc(
+      interestRef,
+      {
+        userId: user.uid,
+        interestedAt: serverTimestamp(),
+        status: 'pending',
+      },
+      { merge: true },
+    );
   } catch (error) {
     console.error('Erro ao marcar interesse:', error);
     throw new Error('Não foi possível registrar seu interesse no pet.');
+  }
+};
+
+export const rejectInterestedUser = async (
+  petId: string,
+  userId: string,
+): Promise<void> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    await updateDoc(interestRef, {
+      status: 'rejected',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Erro ao rejeitar usuário:', error);
+    throw new Error('Não foi possível rejeitar o interessado.');
   }
 };
 
@@ -445,23 +467,44 @@ export const getInterestedUsersForPet = async (
     const querySnapshot = await getDocs(interestCollectionRef);
 
     if (querySnapshot.empty) {
-      return []; // Retorna um array vazio se ninguém demonstrou interesse
+      return [];
     }
 
-    // Mapeia cada documento de interesse para uma promise que busca os dados do usuário
-    const userPromises = querySnapshot.docs.map((doc) => {
+    // Filtramos apenas os que NÃO estão rejeitados
+    const activeDocs = querySnapshot.docs.filter(
+      (doc) => doc.data().status !== 'rejected',
+    );
+
+    const userPromises = activeDocs.map((doc) => {
       const userId = doc.data().userId;
       return getUserDataById(userId);
     });
 
-    // Aguarda todas as buscas de usuários terminarem
     const users = await Promise.all(userPromises);
-
-    // Filtra resultados nulos (caso um usuário tenha sido deletado)
     return users.filter((user): user is UserData => user !== null);
   } catch (error) {
     console.error('Erro ao buscar usuários interessados:', error);
     throw new Error('Não foi possível buscar a lista de interessados.');
+  }
+};
+
+export const checkInterestStatus = async (
+  userId: string,
+  petId: string,
+): Promise<'none' | 'pending' | 'rejected'> => {
+  try {
+    const interestRef = doc(db, 'pets', petId, 'interestedUsers', userId);
+    const docSnap = await getDoc(interestRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Retorna o status salvo ou 'pending' se for um registro antigo sem status
+      return (data.status as 'pending' | 'rejected') || 'pending';
+    }
+    return 'none';
+  } catch (error) {
+    console.error('Erro ao verificar status do interesse:', error);
+    return 'none';
   }
 };
 

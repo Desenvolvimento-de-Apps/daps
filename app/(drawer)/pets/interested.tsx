@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getInterestedUsersForPet,
-  removeInterestForUser,
+  rejectInterestedUser,
   startChatBetweenUsers,
 } from '@/services/api';
 import { UserData } from '@/types';
@@ -62,13 +62,20 @@ const UserListItem = ({
   const handleRecusar = () => {
     Alert.alert(
       'Recusar Interessado',
-      `Tem certeza que deseja remover ${user.nome} da lista de interessados?`,
+      `Tem certeza que deseja recusar ${user.nome}? O usuário será notificado.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Remover',
+          text: 'Recusar',
           style: 'destructive',
-          onPress: () => onRemove(user.uid),
+          onPress: async () => {
+            try {
+              await rejectInterestedUser(petId, user.uid);
+              onRemove(user.uid);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível recusar o usuário.');
+            }
+          },
         },
       ],
     );
@@ -139,15 +146,10 @@ export default function InterestedListScreen() {
     fetchUsers();
   }, [petId]);
 
-  const handleRemoveUser = async (userIdToRemove: string) => {
-    try {
-      await removeInterestForUser(petId, userIdToRemove);
-      setInterestedUsers((prevUsers) =>
-        prevUsers.filter((u) => u.uid !== userIdToRemove),
-      );
-    } catch (e) {
-      Alert.alert('Erro', 'Não foi possível remover o interessado.');
-    }
+  const handleRemoveUser = (userIdToRemove: string) => {
+    setInterestedUsers((prevUsers) =>
+      prevUsers.filter((u) => u.uid !== userIdToRemove),
+    );
   };
 
   const renderContent = () => {
