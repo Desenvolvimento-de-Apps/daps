@@ -2,6 +2,7 @@ import CustomSafeArea from '@/components/CustomSafeArea';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  adoptPet,
   getInterestedUsersForPet,
   rejectInterestedUser,
   startChatBetweenUsers,
@@ -36,6 +37,7 @@ const UserListItem = ({
 }: UserListItemProps) => {
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const [isAdopting, setIsAdopting] = useState(false);
 
   const handleIniciarChat = async () => {
     try {
@@ -81,32 +83,77 @@ const UserListItem = ({
     );
   };
 
+  const handleConfirmAdoption = () => {
+    Alert.alert(
+      'Confirmar Adoção',
+      `Deseja confirmar a doação de ${petName} para ${user.nome}? Essa ação transferirá a propriedade do pet e finalizará o processo.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setIsAdopting(true);
+            try {
+              await adoptPet(petId, user.uid);
+              Alert.alert('Sucesso!', 'Adoção realizada com sucesso!');
+              router.replace('/(drawer)/meus-pets');
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível concluir a adoção.');
+              console.error(error);
+              setIsAdopting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.userItemContainer}>
-      {user.image ? (
-        <Image source={{ uri: user.image }} style={styles.userImage} />
-      ) : (
-        <View style={[styles.userImage, styles.placeholderIconContainer]}>
-          <Ionicons name="person" size={30} color="#a0a0a0" />
-        </View>
-      )}
       <View style={styles.userInfo}>
-        <Text style={styles.userName}>{user.nome}</Text>
-        <Text style={styles.userHandle}>@{user.nomeUsuario}</Text>
+        {user.image ? (
+          <Image source={{ uri: user.image }} style={styles.userImage} />
+        ) : (
+          <View style={[styles.userImage, styles.placeholderIconContainer]}>
+            <Ionicons name="person" size={30} color="#a0a0a0" />
+          </View>
+        )}
+        <View>
+          <Text style={styles.userName}>{user.nome}</Text>
+          <Text style={styles.userHandle}>@{user.nomeUsuario}</Text>
+        </View>
       </View>
 
       <View style={styles.botoesContainer}>
+        {/* Botão RECUSAR */}
         <TouchableOpacity
           style={[styles.botao, styles.recusarBotao]}
           onPress={handleRecusar}
+          disabled={isAdopting}
         >
           <Text style={styles.botaoText}>Recusar</Text>
         </TouchableOpacity>
+
+        {/* Botão CONVERSAR */}
         <TouchableOpacity
           style={[styles.botao, styles.aceitarBotao]}
           onPress={handleIniciarChat}
+          disabled={isAdopting}
         >
           <Text style={styles.botaoText}>Conversar</Text>
+        </TouchableOpacity>
+
+        {/* NOVO Botão ADOTAR */}
+        <TouchableOpacity
+          style={[styles.botao, styles.adotarBotao]}
+          onPress={handleConfirmAdoption}
+          disabled={isAdopting}
+        >
+          {isAdopting ? (
+            <ActivityIndicator size="small" color="#434343" />
+          ) : (
+            <Text style={styles.botaoText}>Finalizar</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -237,12 +284,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   userItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     backgroundColor: '#fff',
+    gap: 12,
+  },
+
+  userInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userImage: {
     width: 50,
@@ -252,7 +304,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   userInfo: {
-    flex: 1,
+    flexDirection: 'row',
   },
   userName: {
     fontSize: 16,
@@ -268,15 +320,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   botoesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 8,
+    marginTop: 4,
   },
   botao: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    flex: 1,
+    paddingVertical: 8,
     borderRadius: 5,
-    marginLeft: 5,
-    minWidth: 80,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   aceitarBotao: {
     backgroundColor: '#88C9BF',
@@ -284,9 +338,12 @@ const styles = StyleSheet.create({
   recusarBotao: {
     backgroundColor: '#F08080',
   },
+  adotarBotao: {
+    backgroundColor: '#FFD358',
+  },
   botaoText: {
     fontSize: 12,
     color: '#434343',
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
 });
